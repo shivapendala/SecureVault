@@ -21,7 +21,7 @@ def roles_required(*roles):
                 return redirect(url_for('auth.login', next=request.url))
             
             user_role = session.get('user_role', 'Auditor')
-            if user_role not in roles and 'Admin' not in roles and user_role != 'Admin':
+            if user_role not in roles and user_role != 'Admin':
                 flash("Access Denied: You lack required privileges for this security zone.", "danger")
                 return redirect(url_for('dashboard.index'))
             return f(*args, **kwargs)

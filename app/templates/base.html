@@ -85,6 +85,10 @@
                 </a>
 
                 <div class="nav-section-title">Compliance & System</div>
+                <a href="{{ url_for('reports.index') }}" class="nav-item-link {% if request.endpoint and 'reports' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-file-earmark-bar-graph-fill nav-icon text-warning"></i>
+                    <span>Security Reports</span>
+                </a>
                 <a href="{{ url_for('security_logs.index') }}" class="nav-item-link {% if request.endpoint and 'security_logs' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-shield-shaded nav-icon text-info"></i>
                     <span>Security Logs</span>

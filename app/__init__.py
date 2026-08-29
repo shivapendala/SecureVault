@@ -26,12 +26,14 @@ def create_app(config_class=Config):
     from app.routes.scanners import scanners_bp
     from app.routes.audit import audit_bp
     from app.routes.notifications import notifications_bp
+    from app.routes.reports import reports_bp
     from app.routes.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(notifications_bp, url_prefix='/notifications')
+    app.register_blueprint(reports_bp, url_prefix='/reports')
     app.register_blueprint(vault_bp, url_prefix='/vault')
     app.register_blueprint(password_sec_bp, url_prefix='/password-security')
     app.register_blueprint(file_sec_bp, url_prefix='/file-security')

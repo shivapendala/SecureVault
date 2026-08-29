@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Security Intelligence & Compliance Reports - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="mb-0 text-white"><i class="bi bi-file-earmark-bar-graph-fill text-info me-2"></i>Security Reports & Compliance Briefings</h2>
+                <span class="badge bg-info bg-opacity-20 text-info border border-info">SOC INTELLIGENCE</span>
+            </div>
+            <p class="text-muted small mb-0">Generate executive briefings, authentication telemetry analytics, brute-force audits, file integrity assessments, and security logs.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-speedometer2 me-1"></i>SOC Dashboard
+            </a>
+            <a href="{{ url_for('reports.generate_report', type='executive', timeframe='30d') }}" class="btn btn-cyber-primary">
+                <i class="bi bi-lightning-charge-fill me-1"></i>Generate Executive Briefing
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Telemetry -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-cyan">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Operator Accounts</div>
+                    <div class="h4 mb-0 text-white fw-bold">{{ total_users }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-emerald">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Login Telemetry</div>
+                    <div class="h4 mb-0 text-white fw-bold">{{ total_logins }} <small class="fs-6 text-danger">({{ failed_logins }} Failed)</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-crimson">
+                    <i class="bi bi-shield-shaded"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Security Events</div>
+                    <div class="h4 mb-0 text-white fw-bold">{{ total_events }} <small class="fs-6 text-danger">({{ critical_events }} Critical)</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-amber">
+                    <i class="bi bi-file-earmark-lock2-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Encrypted Files</div>
+                    <div class="h4 mb-0 text-info fw-bold">{{ total_files }} Files</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Generation Catalog Cards -->
+    <div class="row g-4">
+        <!-- 1. Executive Summary Report -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="cyber-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon-wrapper stat-icon-cyan">
+                            <i class="bi bi-file-earmark-richtext-fill"></i>
+                        </div>
+                        <span class="badge bg-info bg-opacity-20 text-info border border-info">EXECUTIVE</span>
+                    </div>
+                    <h5 class="text-white fw-bold mb-2">Executive Cyber Posture Briefing</h5>
+                    <p class="text-muted small mb-3">High-level summary of system-wide cyber defense health, active operator counts, authentication ratios, cryptographic integrity, and critical events.</p>
+                </div>
+                <div>
+                    <form method="GET" action="{{ url_for('reports.generate_report') }}" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="type" value="executive">
+                        <select name="timeframe" class="form-select form-select-sm cyber-input">
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d" selected>Last 30 Days</option>
+                            <option value="90d">Last 90 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-cyber-primary w-100">
+                            <i class="bi bi-eye me-1"></i>Generate Briefing
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Authentication & Login Statistics -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="cyber-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon-wrapper stat-icon-emerald">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success">TELEMETRY</span>
+                    </div>
+                    <h5 class="text-white fw-bold mb-2">Authentication & Login Statistics</h5>
+                    <p class="text-muted small mb-3">Comprehensive breakdown of total authentications, success vs failure rates, unique IP addresses, device breakdown, and operator sign-in frequencies.</p>
+                </div>
+                <div>
+                    <form method="GET" action="{{ url_for('reports.generate_report') }}" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="type" value="logins">
+                        <select name="timeframe" class="form-select form-select-sm cyber-input">
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d" selected>Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-cyber-primary w-100">
+                            <i class="bi bi-eye me-1"></i>Generate Logins Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Failed Logins & Threat Audit -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="cyber-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon-wrapper stat-icon-crimson">
+                            <i class="bi bi-shield-x"></i>
+                        </div>
+                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger">THREAT AUDIT</span>
+                    </div>
+                    <h5 class="text-white fw-bold mb-2">Failed Logins & Brute-Force Audit</h5>
+                    <p class="text-muted small mb-3">Detailed threat forensics on all unsuccessful sign-in attempts, targeted operator accounts, lockout occurrences, and suspicious origin IP addresses.</p>
+                </div>
+                <div>
+                    <form method="GET" action="{{ url_for('reports.generate_report') }}" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="type" value="failed_logins">
+                        <select name="timeframe" class="form-select form-select-sm cyber-input">
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d" selected>Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-cyber-primary w-100">
+                            <i class="bi bi-eye me-1"></i>Generate Failed Logins Audit
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. File Vault Activity & Integrity -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="cyber-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon-wrapper stat-icon-amber">
+                            <i class="bi bi-file-earmark-check-fill"></i>
+                        </div>
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning">CRYPTOGRAPHY</span>
+                    </div>
+                    <h5 class="text-white fw-bold mb-2">File Vault Cryptographic Integrity</h5>
+                    <p class="text-muted small mb-3">Master audit of uploaded files, SHA-256 fingerprint verifications, AES-256 encryption status, tamper violation checks, and byte consumption.</p>
+                </div>
+                <div>
+                    <form method="GET" action="{{ url_for('reports.generate_report') }}" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="type" value="files">
+                        <select name="timeframe" class="form-select form-select-sm cyber-input">
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d" selected>Last 30 Days</option>
+                            <option value="90d">Last 90 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-cyber-primary w-100">
+                            <i class="bi bi-eye me-1"></i>Generate Files Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Security Events & Audit Stream -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="cyber-card p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="stat-icon-wrapper stat-icon-cyan">
+                            <i class="bi bi-shield-shaded"></i>
+                        </div>
+                        <span class="badge bg-info bg-opacity-20 text-info border border-info">EVENT TRAIL</span>
+                    </div>
+                    <h5 class="text-white fw-bold mb-2">System Security Events & Audit Trail</h5>
+                    <p class="text-muted small mb-3">Chronological audit stream of all privileged operator actions, role modifications, account locks, file operations, and system alerts.</p>
+                </div>
+                <div>
+                    <form method="GET" action="{{ url_for('reports.generate_report') }}" class="d-flex flex-column gap-2">
+                        <input type="hidden" name="type" value="security_events">
+                        <select name="timeframe" class="form-select form-select-sm cyber-input">
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d" selected>Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-cyber-primary w-100">
+                            <i class="bi bi-eye me-1"></i>Generate Security Trail
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
