@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}File Security & Integrity Engine - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="mb-0 text-white"><i class="bi bi-file-earmark-lock2-fill text-info me-2"></i>File Security & SHA-256 Integrity Vault</h2>
+                <span class="badge bg-success bg-opacity-20 text-success border border-success">SHA-256 / AES-256</span>
+            </div>
+            <p class="text-muted small mb-0">Cryptographic hash baselines, tamper-evidence detection, safe extension filtering, and encrypted artifact storage.</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-cyan">
+                    <i class="bi bi-files"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Stored Files</div>
+                    <div class="h4 mb-0 text-white fw-bold">{{ total_files }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-emerald">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Integrity Verified</div>
+                    <div class="h4 mb-0 text-success fw-bold">{{ verified_files }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-amber">
+                    <i class="bi bi-hdd-stack"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Encrypted Size</div>
+                    <div class="h4 mb-0 text-info fw-bold">{{ (total_bytes / 1024 / 1024)|round(2) }} MB</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-crimson">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Tamper Alerts</div>
+                    <div class="h4 mb-0 {% if flagged_files > 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">{{ flagged_files }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Tools Row: Safe Upload & Live Hash Verifier -->
+    <div class="row g-4">
+        <!-- 1. Secure File Upload -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                    <h5 class="text-white mb-0"><i class="bi bi-cloud-arrow-up-fill text-info me-2"></i>Upload & Compute Baseline Hash</h5>
+                    <span class="badge bg-dark border border-secondary text-dim">Max 25 MB</span>
+                </div>
+
+                <form method="POST" action="{{ url_for('file_security.upload_file') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Select File *</label>
+                        <input type="file" name="file" class="form-control cyber-input" required id="fileInput">
+                        <div class="form-text text-dim small">
+                            Safe types: PDF, TXT, PNG, JPG, JSON, YAML, XML, CSV, LOG, KEY, CRT, PEM, ZIP, DOCX, XLSX
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Description / Security Label</label>
+                        <input type="text" name="description" class="form-control cyber-input" placeholder="e.g. Production TLS Certificate or Audit Evidence">
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input bg-dark border-secondary" type="checkbox" name="encrypt" id="encryptSwitch" checked>
+                            <label class="form-check-label text-white small" for="encryptSwitch">
+                                <i class="bi bi-lock-fill text-info me-1"></i>Encrypt File at Rest (AES-256 Fernet)
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-cyber-primary w-100 py-2">
+                        <i class="bi bi-shield-lock me-2"></i>Calculate SHA-256 & Store Asset
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. Live File Integrity Verifier -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                    <h5 class="text-white mb-0"><i class="bi bi-search-heart text-info me-2"></i>Live File Tamper & Hash Verifier</h5>
+                    <span class="badge bg-info bg-opacity-20 text-info border border-info">Zero-Trust Match</span>
+                </div>
+
+                <p class="text-muted small">Upload any local file to compute its SHA-256 fingerprint in real-time and verify whether it matches a known vault baseline or has been modified.</p>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-semibold">Test File Integrity</label>
+                    <input type="file" id="verifyFileInput" class="form-control cyber-input">
+                </div>
+
+                <div id="verifyResultsArea" class="d-none">
+                    <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">Computed SHA-256:</span>
+                            <button class="btn btn-link btn-sm p-0 text-info" id="btnCopyComputedHash"><i class="bi bi-clipboard"></i></button>
+                        </div>
+                        <div class="mono-text text-info small text-break" id="computedHashText">--</div>
+                    </div>
+
+                    <div id="matchBadgeArea"></div>
+                </div>
+
+                <div id="verifyPlaceholder" class="text-center py-4 text-muted small">
+                    <i class="bi bi-fingerprint text-dim fs-2 d-block mb-1"></i>
+                    Select any file above to calculate its cryptographic fingerprint.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stored Files Table -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-safe text-info"></i>
+                <h5 class="mb-0 text-white">Cryptographically Verified File Repository</h5>
+            </div>
+            <span class="badge bg-dark border border-secondary text-dim">{{ files|length }} Files</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Original Filename</th>
+                        <th>Cryptographic SHA-256 Fingerprint</th>
+                        <th>Size</th>
+                        <th>Encryption</th>
+                        <th>Integrity State</th>
+                        <th>Uploaded (UTC)</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in files %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-white"><i class="bi bi-file-earmark-text text-info me-1"></i>{{ f.original_filename }}</div>
+                            <small class="text-muted">{{ f.description or 'No description' }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="mono-text badge bg-dark border border-secondary text-info" style="font-size: 0.75rem;">
+                                    {{ f.checksum_sha256[:12] }}...{{ f.checksum_sha256[-8:] }}
+                                </span>
+                                <button class="btn btn-sm btn-link p-0 text-muted" onclick="window.copyToClipboard('{{ f.checksum_sha256 }}', this)" title="Copy Full SHA-256">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="mono-text text-white small">{{ f.format_size() }}</td>
+                        <td>
+                            {% if f.is_encrypted %}
+                            <span class="badge bg-success bg-opacity-20 text-success border border-success">
+                                <i class="bi bi-lock-fill me-1"></i>{{ f.encryption_algorithm }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary text-dim">Plaintext</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if f.integrity_status == 'VERIFIED' %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success">
+                                <i class="bi bi-shield-check me-1"></i>VERIFIED UNTAMPERED
+                            </span>
+                            {% elif f.integrity_status == 'MODIFIED_WARNING' %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">
+                                <i class="bi bi-exclamation-octagon-fill me-1"></i>TAMPER WARNING
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning">UNCHECKED</span>
+                            {% endif %}
+                        </td>
+                        <td class="mono-text small text-dim">{{ f.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="text-end">
+                            <div class="d-flex align-items-center justify-content-end gap-1">
+                                <!-- Verify Integrity Button -->
+                                <form method="POST" action="{{ url_for('file_security.verify_stored_file', file_id=f.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-info" title="Re-Verify SHA-256 Integrity Against Storage">
+                                        <i class="bi bi-arrow-repeat"></i> Verify
+                                    </button>
+                                </form>
+
+                                <!-- Download Button -->
+                                <a href="{{ url_for('file_security.download_file', file_id=f.id) }}" class="btn btn-sm btn-cyber-primary" title="Download Decrypted File">
+                                    <i class="bi bi-download"></i>
+                                </a>
+
+                                <!-- Delete Button -->
+                                <form method="POST" action="{{ url_for('file_security.delete_file', file_id=f.id) }}" class="d-inline" onsubmit="return confirm('Permanently remove {{ f.original_filename }} from secure vault?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete File">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-folder-x text-dim fs-2 d-block mb-2"></i>
+                            No files stored yet. Use the upload panel above to secure your first file with SHA-256 baseline hashing.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const verifyInput = document.getElementById('verifyFileInput');
+    const resultsArea = document.getElementById('verifyResultsArea');
+    const placeholder = document.getElementById('verifyPlaceholder');
+    const computedText = document.getElementById('computedHashText');
+    const matchArea = document.getElementById('matchBadgeArea');
+    const btnCopy = document.getElementById('btnCopyComputedHash');
+
+    verifyInput.addEventListener('change', () => {
+        if (!verifyInput.files || verifyInput.files.length === 0) return;
+        const file = verifyInput.files[0];
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        placeholder.classList.add('d-none');
+        resultsArea.classList.remove('d-none');
+        computedText.textContent = 'Calculating cryptographic hash...';
+        matchArea.innerHTML = '<div class="spinner-border spinner-border-sm text-info"></div> Matching against vault records...';
+
+        fetch('/file-security/api/verify-hash', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            computedText.textContent = data.calculated_sha256;
+            btnCopy.onclick = () => window.copyToClipboard(data.calculated_sha256, btnCopy);
+
+            if (data.matched) {
+                matchArea.innerHTML = `
+                    <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 small">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                        <div>
+                            <strong>MATCH FOUND:</strong> This file matches vault record <strong>${data.matched_file.original_filename}</strong> (${data.matched_file.file_size}).
+                            <div class="text-dim">Original Upload: ${data.matched_file.uploaded_at} UTC &bull; Integrity Intact.</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                matchArea.innerHTML = `
+                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2 small">
+                        <i class="bi bi-info-circle-fill fs-5"></i>
+                        <div>
+                            <strong>NO VAULT MATCH:</strong> This file SHA-256 fingerprint does not match any current vault baseline (or has been modified).
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(err => {
+            matchArea.innerHTML = `<div class="text-danger small">Error calculating hash: ${err.message}</div>`;
+        });
+    });
+});
+</script>
+{% endblock %}
