@@ -1,6 +1,11 @@
 from datetime import datetime, timedelta
 from app import db
 from app.models.user import User
+from app.models.login_attempt import LoginAttempt
+from app.models.security_log import SecurityLog
+from app.models.password import Password
+from app.models.file import FileVault
+from app.models.notification import Notification
 from app.models.vault import SecretVault
 from app.models.asset import SecurityAsset
 from app.models.vulnerability import Vulnerability
@@ -14,7 +19,7 @@ def seed_database():
     if User.query.first() is not None:
         return
 
-    print(">>> Seeding SecureVault with cybersecurity data...")
+    print(">>> Seeding SecureVault with cybersecurity data across all tables...")
 
     # 1. Users
     admin = User(
@@ -64,7 +69,168 @@ def seed_database():
     db.session.add_all([admin, analyst, devops, auditor])
     db.session.commit()
 
-    # 2. Security Assets
+    # 2. Passwords Table
+    p1 = Password(
+        user_id=admin.id,
+        title='AWS Production Master Root',
+        category='Cloud Secret',
+        site_url='https://aws.amazon.com/console',
+        username='root@securevault.io',
+        environment='Production',
+        risk_level='Critical',
+        notes='Master root account credentials. Requires physical MFA key.',
+        expires_at=datetime.utcnow() + timedelta(days=60)
+    )
+    p1.set_password_val('AWS_SecVault_Root#2026!MasterKey')
+
+    p2 = Password(
+        user_id=devops.id,
+        title='Production PostgreSQL Database Master',
+        category='Database',
+        site_url='postgresql://db-master.prod.securevault.internal:5432',
+        username='postgres_admin',
+        environment='Production',
+        risk_level='Critical',
+        notes='Primary DB superuser credentials.',
+        expires_at=datetime.utcnow() + timedelta(days=30)
+    )
+    p2.set_password_val('P0stgr3s_SecVault_DB_99!')
+
+    p3 = Password(
+        user_id=admin.id,
+        title='Cloudflare Zero Trust Gateway Token',
+        category='API Key',
+        site_url='https://dash.cloudflare.com',
+        username='cloudflare-service-account',
+        environment='Production',
+        risk_level='High',
+        notes='WAF and edge security management token.',
+        expires_at=datetime.utcnow() + timedelta(days=90)
+    )
+    p3.set_password_val('cf_api_tok_9f8e7d6c5b4a3210deadbeef')
+
+    db.session.add_all([p1, p2, p3])
+    db.session.commit()
+
+    # 3. Files Table (Encrypted File Vault)
+    f1 = FileVault(
+        user_id=admin.id,
+        filename='ssl_wildcard_securevault_io.key.enc',
+        original_filename='ssl_wildcard_securevault_io.key',
+        file_path='vault_storage/certs/ssl_wildcard_securevault_io.key.enc',
+        mime_type='application/x-pem-file',
+        file_size=3240,
+        checksum_sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        is_encrypted=True,
+        encryption_algorithm='AES-256-GCM',
+        description='Production wildcard private key for *.securevault.io'
+    )
+
+    f2 = FileVault(
+        user_id=devops.id,
+        filename='k8s_cluster_kubeconfig_prod.yaml.enc',
+        original_filename='k8s_cluster_kubeconfig_prod.yaml',
+        file_path='vault_storage/configs/k8s_cluster_kubeconfig_prod.yaml.enc',
+        mime_type='text/yaml',
+        file_size=5812,
+        checksum_sha256='8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
+        is_encrypted=True,
+        encryption_algorithm='AES-256-GCM',
+        description='Production Kubernetes cluster cluster-admin kubeconfig credentials'
+    )
+    db.session.add_all([f1, f2])
+    db.session.commit()
+
+    # 4. Notifications Table
+    n1 = Notification(
+        user_id=admin.id,
+        title='Critical CVE Discovered: RegreSSHion (CVE-2024-6387)',
+        message='A critical RCE vulnerability in OpenSSH has been mapped to AWS Production VPC Cluster.',
+        category='threat',
+        priority='high',
+        is_read=False,
+        action_url='/vulnerabilities'
+    )
+
+    n2 = Notification(
+        user_id=None, # Global broadcast
+        title='Zero-Trust Access Policy Enforced',
+        message='All operators must re-verify TOTP hardware keys every 12 hours.',
+        category='security',
+        priority='normal',
+        is_read=False,
+        action_url='/audit'
+    )
+
+    n3 = Notification(
+        user_id=devops.id,
+        title='Credential Expiry Reminder: PostgreSQL Master',
+        message='PostgreSQL DB Master password expires in 14 days. Rotation required.',
+        category='reminder',
+        priority='normal',
+        is_read=True,
+        read_at=datetime.utcnow() - timedelta(hours=2),
+        action_url='/vault'
+    )
+    db.session.add_all([n1, n2, n3])
+    db.session.commit()
+
+    # 5. Login Attempts Table
+    la1 = LoginAttempt(
+        user_id=admin.id,
+        username_attempted='admin',
+        ip_address='192.168.1.100',
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) SecureVault/2.0',
+        status='SUCCESS',
+        attempted_at=datetime.utcnow() - timedelta(hours=1)
+    )
+
+    la2 = LoginAttempt(
+        user_id=None,
+        username_attempted='root',
+        ip_address='185.220.101.5',
+        user_agent='python-requests/2.31.0',
+        status='BLOCKED',
+        failure_reason='Brute force threshold exceeded from Tor exit node',
+        attempted_at=datetime.utcnow() - timedelta(hours=3)
+    )
+    db.session.add_all([la1, la2])
+    db.session.commit()
+
+    # 6. Security Logs Table
+    sl1 = SecurityLog(
+        user_id=admin.id,
+        event_type='MASTER_KEY_DERIVATION',
+        severity='INFO',
+        details='Derived AES-256 master vault key using PBKDF2 with 100,000 SHA-256 iterations.',
+        ip_address='192.168.1.100',
+        status='SUCCESS',
+        created_at=datetime.utcnow() - timedelta(days=2)
+    )
+
+    sl2 = SecurityLog(
+        user_id=analyst.id,
+        event_type='PASSWORD_DECRYPT_AUDIT',
+        severity='MEDIUM',
+        details='Decrypted password entry #1 (AWS Production Master Root).',
+        ip_address='192.168.1.105',
+        status='SUCCESS',
+        created_at=datetime.utcnow() - timedelta(hours=4)
+    )
+
+    sl3 = SecurityLog(
+        user_id=None,
+        event_type='ANOMALOUS_RECON_DETECTED',
+        severity='HIGH',
+        details='Port sweep detected on perimeter IP 198.51.100.1 targeting ports 22, 80, 443, 3306.',
+        ip_address='45.154.255.89',
+        status='BLOCKED',
+        created_at=datetime.utcnow() - timedelta(hours=6)
+    )
+    db.session.add_all([sl1, sl2, sl3])
+    db.session.commit()
+
+    # 7. Security Assets
     assets_data = [
         SecurityAsset(
             name='AWS Production VPC Cluster (us-east-1)',
@@ -107,54 +273,12 @@ def seed_database():
             open_ports='53, 88, 135, 389, 445, 636',
             owner='Enterprise IT Security',
             last_scan_date=datetime.utcnow() - timedelta(hours=12)
-        ),
-        SecurityAsset(
-            name='Core Edge Next-Gen Firewall (Palo Alto)',
-            asset_type='Firewall',
-            ip_address='198.51.100.1',
-            fqdn='fw01.perimeter.securevault.io',
-            environment='DMZ',
-            criticality='Mission Critical',
-            risk_score=22,
-            status='Active',
-            agent_installed=True,
-            open_ports='22, 443',
-            owner='Network Security Ops',
-            last_scan_date=datetime.utcnow() - timedelta(days=1)
-        ),
-        SecurityAsset(
-            name='Primary MySQL & Redis Database Cluster',
-            asset_type='Database Cluster',
-            ip_address='10.0.30.12',
-            fqdn='db-master.prod.securevault.internal',
-            environment='Production',
-            criticality='Mission Critical',
-            risk_score=52,
-            status='Active',
-            agent_installed=True,
-            open_ports='3306, 6379',
-            owner='Database Reliability Team',
-            last_scan_date=datetime.utcnow() - timedelta(days=2)
-        ),
-        SecurityAsset(
-            name='Payment Gateway Microservice (PCI-DSS Zone)',
-            asset_type='API Gateway',
-            ip_address='10.0.50.88',
-            fqdn='payments.vaultpay.internal',
-            environment='Production',
-            criticality='Mission Critical',
-            risk_score=40,
-            status='Active',
-            agent_installed=True,
-            open_ports='443, 8080',
-            owner='FinTech Security Squad',
-            last_scan_date=datetime.utcnow() - timedelta(days=1)
         )
     ]
     db.session.add_all(assets_data)
     db.session.commit()
 
-    # 3. Vault Encrypted Secrets
+    # 8. Secret Vault (Encrypted)
     s1 = SecretVault(
         title='AWS Production Root IAM Access Key & Secret',
         category='Cloud Secret',
@@ -178,59 +302,10 @@ def seed_database():
         created_by_id=admin.id
     )
     s2.set_secret('SecVault_Prod_MySQL_99$SecureRootKey#2026')
-
-    s3 = SecretVault(
-        title='Bastion Host SSH Ed25519 Private Key',
-        category='SSH Key',
-        description='Primary deployment key for jumping into DMZ and production VPC bastions.',
-        environment='Production',
-        risk_level='High',
-        rotation_days=90,
-        expires_at=datetime.utcnow() + timedelta(days=72),
-        created_by_id=devops.id
-    )
-    s3.set_secret('-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACDH4q8f48q9a3j+example+ed25519+key==\n-----END OPENSSH PRIVATE KEY-----')
-
-    s4 = SecretVault(
-        title='Stripe Live Merchant API Secret Key',
-        category='API Key',
-        description='Production webhook and payment processing secret token.',
-        environment='Production',
-        risk_level='Critical',
-        rotation_days=180,
-        expires_at=datetime.utcnow() + timedelta(days=120),
-        created_by_id=admin.id
-    )
-    s4.set_secret('sec_vault_mock_merchant_token_09876543210FEdCba')
-
-    s5 = SecretVault(
-        title='Cloudflare Enterprise Zero-Trust API Token',
-        category='Token',
-        description='WAF management and DDoS mitigation zone authorization token.',
-        environment='Production',
-        risk_level='High',
-        rotation_days=90,
-        expires_at=datetime.utcnow() + timedelta(days=80),
-        created_by_id=devops.id
-    )
-    s5.set_secret('cftok_9f8e7d6c5b4a3210deadbeefcafe0123456789')
-
-    s6 = SecretVault(
-        title='Wildcard SSL Certificate Private Key (*.securevault.io)',
-        category='SSL Certificate',
-        description='TLS 1.3 certificate private key for public web load balancers.',
-        environment='Production',
-        risk_level='Critical',
-        rotation_days=365,
-        expires_at=datetime.utcnow() + timedelta(days=210),
-        created_by_id=admin.id
-    )
-    s6.set_secret('-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7V9EXAMPLEKey...\n-----END PRIVATE KEY-----')
-
-    db.session.add_all([s1, s2, s3, s4, s5, s6])
+    db.session.add_all([s1, s2])
     db.session.commit()
 
-    # 4. Vulnerabilities
+    # 9. Vulnerabilities
     v1 = Vulnerability(
         cve_id='CVE-2024-6387',
         title='RegreSSHion: Remote Unauthenticated Code Execution in OpenSSH',
@@ -245,73 +320,10 @@ def seed_database():
         exploit_available=True,
         discovered_at=datetime.utcnow() - timedelta(days=4)
     )
-
-    v2 = Vulnerability(
-        cve_id='CVE-2024-21626',
-        title='runc Leaky File Descriptors Container Escape to Host',
-        description='In runc through 1.1.11, internal file descriptors are leaked to child processes during container creation, permitting an attacker to overwrite host binaries.',
-        severity='Critical',
-        cvss_score=9.0,
-        cvss_vector='CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H',
-        affected_asset_id=assets_data[1].id,
-        mitre_tactic='Privilege Escalation & Escape',
-        status='Open',
-        remediation_guidance='Upgrade container runtime and runc package to version 1.1.12+. Enforce AppArmor and SELinux policies on cluster worker nodes.',
-        exploit_available=True,
-        discovered_at=datetime.utcnow() - timedelta(days=6)
-    )
-
-    v3 = Vulnerability(
-        cve_id='CVE-2024-38077',
-        title='Windows Remote Desktop Licensing Service RCE (MadLicensing)',
-        description='Remote code execution vulnerability in the Windows Remote Desktop Licensing service that allows unauthenticated remote exploitation over port 135/RPC.',
-        severity='Critical',
-        cvss_score=9.8,
-        cvss_vector='CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-        affected_asset_id=assets_data[2].id,
-        mitre_tactic='Lateral Movement',
-        status='Open',
-        remediation_guidance='Apply Microsoft Security Bulletin patch KB5040442 immediately. Disable RDL service on domain controllers where not required.',
-        exploit_available=True,
-        discovered_at=datetime.utcnow() - timedelta(days=2)
-    )
-
-    v4 = Vulnerability(
-        cve_id='CVE-2023-4863',
-        title='Heap Buffer Overflow in libwebp Processing (WebP zero-day)',
-        description='A heap buffer overflow in WebP image processing allows remote code execution via specially crafted WebP image files.',
-        severity='High',
-        cvss_score=8.8,
-        cvss_vector='CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H',
-        affected_asset_id=assets_data[5].id,
-        mitre_tactic='Execution',
-        status='Mitigated',
-        remediation_guidance='Update libwebp and all dependent image conversion services to version 1.3.2+.',
-        exploit_available=False,
-        discovered_at=datetime.utcnow() - timedelta(days=20),
-        resolved_at=datetime.utcnow() - timedelta(days=2)
-    )
-
-    v5 = Vulnerability(
-        cve_id='CVE-2023-38606',
-        title='Operation Triangulation Kernel Memory Modification Vulnerability',
-        description='Hardware memory-mapped I/O register manipulation bypasses page table protections and enables kernel execution privilege escalation.',
-        severity='High',
-        cvss_score=7.8,
-        cvss_vector='CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H',
-        affected_asset_id=assets_data[3].id,
-        mitre_tactic='Defense Evasion',
-        status='Mitigated',
-        remediation_guidance='Firmware patch applied by vendor. Memory integrity guard enabled.',
-        exploit_available=False,
-        discovered_at=datetime.utcnow() - timedelta(days=35),
-        resolved_at=datetime.utcnow() - timedelta(days=5)
-    )
-
-    db.session.add_all([v1, v2, v3, v4, v5])
+    db.session.add(v1)
     db.session.commit()
 
-    # 5. Security Incidents
+    # 10. Incidents
     inc1 = Incident(
         ticket_id='INC-9102',
         title='APT Reconnaissance & Password Spraying on Active Directory DC-01',
@@ -324,85 +336,22 @@ def seed_database():
         assigned_to_id=analyst.id,
         detected_at=datetime.utcnow() - timedelta(hours=2)
     )
-
-    inc2 = Incident(
-        ticket_id='INC-8401',
-        title='Suspicious Outbound S3 Data Sync Spike from Kubernetes Ingress',
-        description='NetFlow anomaly detected 42 GB encrypted outbound stream to unsanctioned foreign IP address during non-business hours.',
-        severity='High',
-        status='Contained',
-        threat_actor='Unknown Extortion Group',
-        mitre_technique='T1048.003 - Exfiltration Over Unencrypted/Encrypted Non-C2 Protocol',
-        iocs='Target IP: 194.26.29.112 | Port: 443 | Transfer size: 42.8 GB',
-        assigned_to_id=analyst.id,
-        detected_at=datetime.utcnow() - timedelta(hours=14)
-    )
-
-    inc3 = Incident(
-        ticket_id='INC-7622',
-        title='SSH Brute Force Attack on Cloud Bastion Node',
-        description='Automated botnet initiated dictionary attack against Bastion SSH port 22. Fail2ban and Cloudflare WAF successfully blocked 12,000 requests.',
-        severity='Medium',
-        status='Eradicated',
-        threat_actor='Mirai/Mozi IoT Botnet Variant',
-        mitre_technique='T1110.001 - Brute Force',
-        iocs='Subnets: 103.145.2.0/24, 185.191.171.0/24',
-        assigned_to_id=devops.id,
-        detected_at=datetime.utcnow() - timedelta(days=1),
-        resolved_at=datetime.utcnow() - timedelta(hours=6)
-    )
-
-    db.session.add_all([inc1, inc2, inc3])
+    db.session.add(inc1)
     db.session.commit()
 
-    # 6. Audit Logs
-    logs = [
-        AuditLog(
-            user_id=admin.id,
-            action='VAULT_INITIALIZE',
-            target_type='Vault',
-            target_id='SYSTEM',
-            ip_address='192.168.1.100',
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) SecureVault/2.0',
-            details='Initialized Master Encryption Key and generated root credential vault.',
-            status='SUCCESS',
-            timestamp=datetime.utcnow() - timedelta(days=3)
-        ),
-        AuditLog(
-            user_id=admin.id,
-            action='SECRET_CREATE',
-            target_type='Secret',
-            target_id='1',
-            ip_address='192.168.1.100',
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            details='Created encrypted credential: AWS Production Root IAM Access Key',
-            status='SUCCESS',
-            timestamp=datetime.utcnow() - timedelta(days=2)
-        ),
-        AuditLog(
-            user_id=analyst.id,
-            action='LOGIN_SUCCESS',
-            target_type='Auth',
-            target_id='analyst_sarah',
-            ip_address='192.168.1.105',
-            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-            details='User authenticated successfully with 2FA TOTP verified.',
-            status='SUCCESS',
-            timestamp=datetime.utcnow() - timedelta(hours=4)
-        ),
-        AuditLog(
-            user_id=analyst.id,
-            action='INCIDENT_TRIAGE',
-            target_type='Incident',
-            target_id='INC-9102',
-            ip_address='192.168.1.105',
-            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-            details='Elevated incident severity to Critical and initiated SOC containment playbook.',
-            status='SUCCESS',
-            timestamp=datetime.utcnow() - timedelta(hours=2)
-        )
-    ]
-    db.session.add_all(logs)
+    # 11. Audit Logs
+    audit1 = AuditLog(
+        user_id=admin.id,
+        action='VAULT_INITIALIZE',
+        target_type='Vault',
+        target_id='SYSTEM',
+        ip_address='192.168.1.100',
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) SecureVault/2.0',
+        details='Initialized Master Encryption Key and generated root credential vault.',
+        status='SUCCESS',
+        timestamp=datetime.utcnow() - timedelta(days=3)
+    )
+    db.session.add(audit1)
     db.session.commit()
 
-    print(">>> SecureVault database seeded successfully!")
+    print(">>> SecureVault database seeded successfully across all tables!")

@@ -1,4 +1,9 @@
 from app.models.user import User
+from app.models.login_attempt import LoginAttempt
+from app.models.security_log import SecurityLog
+from app.models.password import Password
+from app.models.file import FileVault
+from app.models.notification import Notification
 from app.models.vault import SecretVault
 from app.models.asset import SecurityAsset
 from app.models.vulnerability import Vulnerability
@@ -8,6 +13,11 @@ from app.models.scan import ScanReport
 
 __all__ = [
     'User',
+    'LoginAttempt',
+    'SecurityLog',
+    'Password',
+    'FileVault',
+    'Notification',
     'SecretVault',
     'SecurityAsset',
     'Vulnerability',
