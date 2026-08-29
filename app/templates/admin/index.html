@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}SOC Administrator Console - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="mb-0 text-white"><i class="bi bi-person-gear text-info me-2"></i>SOC Administrator Console</h2>
+                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger">ROOT PRIVILEGES</span>
+            </div>
+            <p class="text-muted small mb-0">Centralized operator identity governance, access enforcement, login telemetry, and encrypted file oversight.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-speedometer2 me-1"></i>SOC Dashboard
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-cyber-primary" target="_blank">
+                <i class="bi bi-person-plus me-1"></i>Provision Operator
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-cyan">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Total Operators</div>
+                    <div class="h4 mb-0 text-white fw-bold">{{ total_users }} <small class="fs-6 text-success">({{ active_users }} Active)</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-amber">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Suspended / Locked</div>
+                    <div class="h4 mb-0 {% if disabled_users + locked_users > 0 %}text-warning{% else %}text-muted{% endif %} fw-bold">
+                        {{ disabled_users + locked_users }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-emerald">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Login Telemetry</div>
+                    <div class="h4 mb-0 text-white fw-bold">{{ total_logins }} <small class="fs-6 text-danger">({{ failed_logins }} Failed)</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-crimson">
+                    <i class="bi bi-file-earmark-lock2-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Stored File Assets</div>
+                    <div class="h4 mb-0 text-info fw-bold">{{ total_files }} Files</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="cyber-card p-2">
+        <ul class="nav nav-pills gap-2" id="adminTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link text-white {% if active_tab == 'users' %}active bg-info text-dark fw-bold{% endif %}" href="{{ url_for('admin.index', tab='users') }}">
+                    <i class="bi bi-people me-1"></i>Operators & Users ({{ users|length }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white {% if active_tab == 'logins' %}active bg-info text-dark fw-bold{% endif %}" href="{{ url_for('admin.index', tab='logins') }}">
+                    <i class="bi bi-clock-history me-1"></i>Login Attempts ({{ login_attempts|length }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white {% if active_tab == 'logs' %}active bg-info text-dark fw-bold{% endif %}" href="{{ url_for('admin.index', tab='logs') }}">
+                    <i class="bi bi-shield-shaded me-1"></i>Security Logs ({{ security_logs|length }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white {% if active_tab == 'files' %}active bg-info text-dark fw-bold{% endif %}" href="{{ url_for('admin.index', tab='files') }}">
+                    <i class="bi bi-files me-1"></i>Uploaded Files ({{ files|length }})
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- TAB 1: USERS MANAGEMENT -->
+    {% if active_tab == 'users' %}
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-people-fill text-info"></i>
+                <h5 class="mb-0 text-white">Operator Directory & Account Governance</h5>
+            </div>
+            <span class="badge bg-dark border border-secondary text-dim">{{ users|length }} Enrolled Accounts</span>
+        </div>
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Operator Identity</th>
+                        <th>Email & Department</th>
+                        <th>Clearance Tier</th>
+                        <th>Status</th>
+                        <th>Lockout / Failures</th>
+                        <th>Last Sign In (UTC)</th>
+                        <th class="text-end">Administrative Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-white">{{ u.full_name or u.username }}</div>
+                            <div class="mono-text text-info small">@{{ u.username }}</div>
+                        </td>
+                        <td>
+                            <div class="mono-text text-dim small">{{ u.email }}</div>
+                            <small class="text-muted">{{ u.department or 'Security Operations' }}</small>
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin.change_user_role', user_id=u.id) }}" class="d-inline">
+                                <select name="role" class="form-select form-select-sm cyber-input" style="width: 130px; display: inline-block;" onchange="this.form.submit()">
+                                    <option value="Admin" {% if u.role == 'Admin' %}selected{% endif %}>Admin (Root)</option>
+                                    <option value="Analyst" {% if u.role == 'Analyst' %}selected{% endif %}>Analyst</option>
+                                    <option value="DevOps" {% if u.role == 'DevOps' %}selected{% endif %}>DevOps</option>
+                                    <option value="Auditor" {% if u.role == 'Auditor' %}selected{% endif %}>Auditor</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td>
+                            {% if u.status == 'Active' %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>ACTIVE
+                            </span>
+                            {% elif u.status == 'Locked' %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">
+                                <i class="bi bi-lock-fill me-1"></i>LOCKED
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary bg-opacity-50 text-dim border border-secondary">
+                                <i class="bi bi-slash-circle me-1"></i>DISABLED
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.failed_login_count > 0 %}
+                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning">
+                                {{ u.failed_login_count }} Failures
+                            </span>
+                            {% else %}
+                            <span class="text-success small"><i class="bi bi-shield-check me-1"></i>Clean</span>
+                            {% endif %}
+                        </td>
+                        <td class="mono-text small text-dim">
+                            {{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else 'Never' }}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex align-items-center justify-content-end gap-1">
+                                <!-- Unlock button if locked -->
+                                {% if u.status == 'Locked' or (u.failed_login_count and u.failed_login_count >= 5) %}
+                                <form method="POST" action="{{ url_for('admin.unlock_user', user_id=u.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Clear Lockout Counters">
+                                        <i class="bi bi-unlock-fill"></i> Unlock
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                <!-- Activate / Deactivate Toggle -->
+                                {% if u.status == 'Active' %}
+                                <form method="POST" action="{{ url_for('admin.deactivate_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Suspend operator account for {{ u.username }}?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Suspend Operator Account">
+                                        <i class="bi bi-person-x-fill"></i> Deactivate
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('admin.activate_user', user_id=u.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Activate Operator Account">
+                                        <i class="bi bi-person-check-fill"></i> Activate
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- TAB 2: LOGIN ATTEMPTS -->
+    {% if active_tab == 'logins' %}
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-info"></i>
+                <h5 class="mb-0 text-white">System-Wide Login Telemetry Feed</h5>
+            </div>
+            <span class="badge bg-dark border border-secondary text-dim">Recent 30 Attempts</span>
+        </div>
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Identifier Attempted</th>
+                        <th>IP Address</th>
+                        <th>Browser & Device</th>
+                        <th>Status</th>
+                        <th>Context / Failure Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in login_attempts %}
+                    <tr>
+                        <td class="mono-text text-white small">{{ att.attempted_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="mono-text text-info fw-semibold">{{ att.username_attempted }}</td>
+                        <td class="mono-text text-dim small">
+                            <i class="bi bi-geo-alt-fill text-info me-1" style="font-size: 0.72rem;"></i>{{ att.ip_address }}
+                        </td>
+                        <td>
+                            <div class="text-white small">{{ att.get_browser_info() }}</div>
+                            <small class="text-dim mono-text">{{ att.user_agent[:35] }}</small>
+                        </td>
+                        <td>
+                            {% if att.status == 'SUCCESS' %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success">SUCCESS</span>
+                            {% elif att.status == 'BLOCKED' %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">BLOCKED</span>
+                            {% else %}
+                            <span class="badge bg-warning bg-opacity-25 text-warning border border-warning">FAILED</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">
+                            {{ att.failure_reason or 'Authentication successful' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- TAB 3: SECURITY LOGS -->
+    {% if active_tab == 'logs' %}
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-shaded text-info"></i>
+                <h5 class="mb-0 text-white">System-Wide Security Events</h5>
+            </div>
+            <a href="{{ url_for('security_logs.index') }}" class="btn btn-sm btn-cyber-outline">Open Full Log Filter &rarr;</a>
+        </div>
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Operator</th>
+                        <th>Event Type</th>
+                        <th>Action Details</th>
+                        <th>IP Address</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in security_logs %}
+                    <tr>
+                        <td class="mono-text text-white small">{{ l.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="mono-text text-info small">{{ l.user.username if l.user else 'System' }}</td>
+                        <td><span class="mono-text badge bg-dark border border-secondary text-info">{{ l.event_type }}</span></td>
+                        <td class="text-white small">{{ l.details }}</td>
+                        <td class="mono-text text-dim small">{{ l.ip_address }}</td>
+                        <td>
+                            {% if l.severity == 'CRITICAL' %}
+                            <span class="badge badge-critical">CRITICAL</span>
+                            {% elif l.severity == 'HIGH' %}
+                            <span class="badge badge-high">HIGH</span>
+                            {% elif l.severity == 'MEDIUM' %}
+                            <span class="badge badge-medium">MEDIUM</span>
+                            {% else %}
+                            <span class="badge badge-low">INFO</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if l.status == 'SUCCESS' %}bg-success bg-opacity-20 text-success border border-success{% elif l.status == 'BLOCKED' %}bg-danger bg-opacity-20 text-danger border border-danger{% else %}bg-warning bg-opacity-20 text-warning border border-warning{% endif %}">
+                                {{ l.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- TAB 4: FILE RECORDS -->
+    {% if active_tab == 'files' %}
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-files text-info"></i>
+                <h5 class="mb-0 text-white">System Master File Vault Records</h5>
+            </div>
+            <a href="{{ url_for('file_security.index') }}" class="btn btn-sm btn-cyber-outline">Open File Security Engine &rarr;</a>
+        </div>
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Original Filename</th>
+                        <th>Uploader</th>
+                        <th>SHA-256 Fingerprint</th>
+                        <th>Size</th>
+                        <th>Encryption</th>
+                        <th>Integrity Status</th>
+                        <th>Uploaded (UTC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in files %}
+                    <tr>
+                        <td class="fw-bold text-white">
+                            <i class="bi bi-file-earmark-lock text-info me-1"></i>{{ f.original_filename }}
+                        </td>
+                        <td class="mono-text text-info small">{{ f.uploader.username if f.uploader else 'Root' }}</td>
+                        <td>
+                            <span class="mono-text badge bg-dark border border-secondary text-info">
+                                {{ f.checksum_sha256[:12] }}...{{ f.checksum_sha256[-8:] }}
+                            </span>
+                        </td>
+                        <td class="mono-text text-white small">{{ f.format_size() }}</td>
+                        <td>
+                            <span class="badge bg-success bg-opacity-20 text-success border border-success">
+                                {{ f.encryption_algorithm }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if f.integrity_status == 'VERIFIED' %}
+                            <span class="badge bg-success bg-opacity-25 text-success border border-success">VERIFIED</span>
+                            {% else %}
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">TAMPER WARNING</span>
+                            {% endif %}
+                        </td>
+                        <td class="mono-text small text-dim">{{ f.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No files in repository.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -28,6 +28,18 @@ def roles_required(*roles):
         return decorated_function
     return decorator
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Authentication required. Please sign in as an Administrator.", "warning")
+            return redirect(url_for('auth.login', next=request.url))
+        if session.get('user_role') != 'Admin':
+            flash("Access Denied: SOC Administrator clearance required.", "danger")
+            return redirect(url_for('dashboard.index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 def log_audit(action, target_type=None, target_id=None, details=None, status="SUCCESS"):
     """Helper to record audit events in database."""
     try:

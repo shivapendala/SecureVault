@@ -43,6 +43,10 @@
                     <i class="bi bi-person-workspace nav-icon text-info"></i>
                     <span>User Dashboard</span>
                 </a>
+                <a href="{{ url_for('admin.index') }}" class="nav-item-link {% if request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-person-gear nav-icon text-danger"></i>
+                    <span>Admin Console</span>
+                </a>
 
                 <div class="nav-section-title">Security Modules</div>
                 <a href="{{ url_for('vault.index') }}" class="nav-item-link {% if request.endpoint and 'vault' in request.endpoint %}active{% endif %}">
