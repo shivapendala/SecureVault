@@ -354,4 +354,49 @@ def seed_database():
     db.session.add(audit1)
     db.session.commit()
 
+    # 12. Enterprise Engines Seed
+    try:
+        from app.services.threat_intelligence.feed_manager import ThreatFeedManager
+        ThreatFeedManager.seed_initial_threat_data()
+    except Exception as e:
+        print(f"[Warning] Threat Intelligence seeding: {e}")
+
+    try:
+        from app.services.appsec.waf_engine import WafEngineService
+        WafEngineService.seed_waf_rules()
+    except Exception as e:
+        print(f"[Warning] WAF rules seeding: {e}")
+
+    try:
+        from app.services.iam.abac_policy_engine import AbacPolicyEngine
+        AbacPolicyEngine.seed_policies()
+    except Exception as e:
+        print(f"[Warning] ABAC policies seeding: {e}")
+
+    try:
+        from app.services.crypto_kms.asymmetric_kms import AsymmetricKmsService
+        from app.models.crypto_kms import AsymmetricKeyPair
+        if AsymmetricKeyPair.query.count() == 0:
+            AsymmetricKmsService.generate_key_pair('SOC-Root-Master-Key', algorithm='RSA-2048')
+    except Exception as e:
+        print(f"[Warning] Crypto KMS seeding: {e}")
+
+    try:
+        from app.services.compliance.compliance_evaluator import ComplianceEvaluatorService
+        ComplianceEvaluatorService.seed_compliance_frameworks()
+    except Exception as e:
+        print(f"[Warning] Compliance frameworks seeding: {e}")
+
+    try:
+        from app.services.compliance.risk_matrix_service import RiskMatrixService
+        RiskMatrixService.seed_initial_risks()
+    except Exception as e:
+        print(f"[Warning] Risk matrix seeding: {e}")
+
+    try:
+        from app.services.soar.playbook_engine import PlaybookEngineService
+        PlaybookEngineService.seed_playbooks()
+    except Exception as e:
+        print(f"[Warning] SOAR playbooks seeding: {e}")
+
     print(">>> SecureVault database seeded successfully across all tables!")
