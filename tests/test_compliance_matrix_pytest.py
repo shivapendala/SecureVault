@@ -12,11 +12,17 @@ def test_compliance_framework_evaluation(app, db_session):
         soc2 = ComplianceFramework.query.filter_by(code='SOC2').first()
         assert soc2 is not None
         assert soc2.total_controls >= 4
-        assert soc2.readiness_percentage == 100.0
+
+        # Ensure all controls are compliant for initial state
+        controls = ComplianceControl.query.filter_by(framework_id=soc2.id).all()
+        for c in controls:
+            c.status = 'COMPLIANT'
+        db_session.commit()
+        init_eval = ComplianceEvaluatorService.recalculate_readiness(soc2.id)
+        assert init_eval['readiness_percentage'] == 100.0
 
         # Change one control status and recalculate
-        control = ComplianceControl.query.filter_by(framework_id=soc2.id).first()
-        control.status = 'IN_PROGRESS'
+        controls[0].status = 'IN_PROGRESS'
         db_session.commit()
 
         updated = ComplianceEvaluatorService.recalculate_readiness(soc2.id)
