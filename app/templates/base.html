@@ -81,9 +81,13 @@
                 </a>
 
                 <div class="nav-section-title">Compliance & System</div>
+                <a href="{{ url_for('security_logs.index') }}" class="nav-item-link {% if request.endpoint and 'security_logs' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-shield-shaded nav-icon text-info"></i>
+                    <span>Security Logs</span>
+                </a>
                 <a href="{{ url_for('audit.index') }}" class="nav-item-link {% if 'audit' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-journal-text nav-icon"></i>
-                    <span>Audit Trail Logs</span>
+                    <span>SOC Audit Trail</span>
                 </a>
 
                 <div class="nav-section-title">Role Perspective Switch</div>

@@ -16,13 +16,14 @@ def create_app(config_class=Config):
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dashboard_bp
     from app.routes.vault import vault_bp
+    from app.routes.password_security import password_sec_bp
+    from app.routes.file_security import file_sec_bp
+    from app.routes.security_logs import sec_logs_bp
     from app.routes.assets import assets_bp
     from app.routes.vulnerabilities import vuln_bp
     from app.routes.incidents import incidents_bp
     from app.routes.scanners import scanners_bp
     from app.routes.audit import audit_bp
-    from app.routes.password_security import password_sec_bp
-    from app.routes.file_security import file_sec_bp
     from app.routes.api import api_bp
 
     app.register_blueprint(auth_bp)
@@ -30,6 +31,7 @@ def create_app(config_class=Config):
     app.register_blueprint(vault_bp, url_prefix='/vault')
     app.register_blueprint(password_sec_bp, url_prefix='/password-security')
     app.register_blueprint(file_sec_bp, url_prefix='/file-security')
+    app.register_blueprint(sec_logs_bp, url_prefix='/security-logs')
     app.register_blueprint(assets_bp, url_prefix='/assets')
     app.register_blueprint(vuln_bp, url_prefix='/vulnerabilities')
     app.register_blueprint(incidents_bp, url_prefix='/incidents')

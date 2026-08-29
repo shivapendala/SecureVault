@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Security Logs & Activity Trail - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="mb-0 text-white"><i class="bi bi-shield-shaded text-info me-2"></i>Security Logs & Activity Trail</h2>
+                <span class="badge bg-info bg-opacity-10 text-info border border-info">SOC Telemetry</span>
+            </div>
+            <p class="text-muted small mb-0">Immutable audit stream recording logins, credential rotations, file operations, and account policy events.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('security_logs.export_csv') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+            </a>
+            <a href="{{ url_for('security_logs.export_json') }}" class="btn btn-cyber-outline" target="_blank">
+                <i class="bi bi-file-earmark-code me-1"></i>Export JSON
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-cyan">
+                    <i class="bi bi-journal-text"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Total Recorded Logs</div>
+                    <div class="h4 mb-0 text-white fw-bold">{{ total_logs }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-crimson">
+                    <i class="bi bi-shield-slash-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Critical Events</div>
+                    <div class="h4 mb-0 {% if critical_events > 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">{{ critical_events }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-amber">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Blocked / Failures</div>
+                    <div class="h4 mb-0 {% if blocked_events > 0 %}text-warning{% else %}text-muted{% endif %} fw-bold">{{ blocked_events }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper stat-icon-emerald">
+                    <i class="bi bi-activity"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Today's Activity</div>
+                    <div class="h4 mb-0 text-success fw-bold">{{ today_events }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search Form -->
+    <div class="cyber-card p-3">
+        <form method="GET" action="{{ url_for('security_logs.index') }}" class="row g-2 align-items-center">
+            <!-- Search Keyword -->
+            <div class="col-12 col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-dim"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control cyber-input" placeholder="Search event type, IP, or details..." value="{{ search_query }}">
+                </div>
+            </div>
+
+            <!-- Severity Filter -->
+            <div class="col-6 col-md-2">
+                <select name="severity" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Severities</option>
+                    <option value="CRITICAL" {% if severity_filter == 'CRITICAL' %}selected{% endif %}>Critical Only</option>
+                    <option value="HIGH" {% if severity_filter == 'HIGH' %}selected{% endif %}>High Only</option>
+                    <option value="MEDIUM" {% if severity_filter == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                    <option value="INFO" {% if severity_filter == 'INFO' %}selected{% endif %}>Info</option>
+                </select>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-6 col-md-3">
+                <select name="category" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Action Categories</option>
+                    <option value="AUTH" {% if category_filter == 'AUTH' %}selected{% endif %}>Authentication (Login/Logout)</option>
+                    <option value="PASSWORD" {% if category_filter == 'PASSWORD' %}selected{% endif %}>Password Security</option>
+                    <option value="FILE" {% if category_filter == 'FILE' %}selected{% endif %}>File Security & Vault</option>
+                    <option value="ACCOUNT" {% if category_filter == 'ACCOUNT' %}selected{% endif %}>Account Changes</option>
+                </select>
+            </div>
+
+            <!-- Days Window -->
+            <div class="col-6 col-md-2">
+                <select name="days" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="7" {% if days_filter == '7' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30" {% if days_filter == '30' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="90" {% if days_filter == '90' %}selected{% endif %}>Last 90 Days</option>
+                    <option value="365" {% if days_filter == '365' %}selected{% endif %}>Last 1 Year</option>
+                </select>
+            </div>
+
+            <!-- Reset / Submit -->
+            <div class="col-6 col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-cyber-primary w-100" title="Apply Filter"><i class="bi bi-filter"></i></button>
+                <a href="{{ url_for('security_logs.index') }}" class="btn btn-outline-secondary border-secondary text-dim" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Security Logs Table -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-list-columns-reverse text-info"></i>
+                <h5 class="mb-0 text-white">Activity Log Stream</h5>
+            </div>
+            <span class="badge bg-dark border border-secondary text-dim">Showing {{ logs|length }} Events</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Event Type</th>
+                        <th>Action Details</th>
+                        <th>IP Address</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in logs %}
+                    <tr>
+                        <td class="mono-text text-white small" style="white-space: nowrap;">
+                            {{ l.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </td>
+                        <td>
+                            <span class="mono-text badge bg-dark border border-secondary text-info">
+                                {{ l.event_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="text-white small fw-semibold">{{ l.details }}</div>
+                            <small class="text-dim">{{ l.user_agent[:45] }}</small>
+                        </td>
+                        <td class="mono-text text-dim small">
+                            <i class="bi bi-geo-alt-fill text-info me-1" style="font-size: 0.72rem;"></i>{{ l.ip_address }}
+                        </td>
+                        <td>
+                            {% if l.severity == 'CRITICAL' %}
+                            <span class="badge badge-critical">CRITICAL</span>
+                            {% elif l.severity == 'HIGH' %}
+                            <span class="badge badge-high">HIGH</span>
+                            {% elif l.severity == 'MEDIUM' %}
+                            <span class="badge badge-medium">MEDIUM</span>
+                            {% else %}
+                            <span class="badge badge-low">INFO</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if l.status == 'SUCCESS' %}
+                            <span class="badge bg-success bg-opacity-20 text-success border border-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>SUCCESS
+                            </span>
+                            {% elif l.status == 'BLOCKED' %}
+                            <span class="badge bg-danger bg-opacity-20 text-danger border border-danger">
+                                <i class="bi bi-shield-x me-1"></i>BLOCKED
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>FAILURE
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-journal-x text-dim fs-2 d-block mb-2"></i>
+                            No security events match the current filter criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
