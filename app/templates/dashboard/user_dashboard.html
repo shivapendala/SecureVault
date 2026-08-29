@@ -40,25 +40,29 @@
                     </div>
                 </div>
 
-                <div class="progress bg-dark mb-3" style="height: 8px;">
+                <div class="progress bg-dark mb-3" style="height: 10px;">
                     <div class="progress-bar bg-{{ score_badge }}" style="width: {{ user_score }}%;"></div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-muted small">Rating Assessment:</span>
+                    <span class="text-muted small">Defense Assessment:</span>
                     <span class="badge bg-{{ score_badge }} bg-opacity-20 text-{{ score_badge }} border border-{{ score_badge }}">
                         {{ score_label }}
                     </span>
                 </div>
 
                 <div class="card-header-cyber p-0 mb-2 mt-2">
-                    <span class="text-white small fw-bold">Score Breakdown:</span>
+                    <span class="text-white small fw-bold">Defense Pillars (4 &times; 25 pts):</span>
                 </div>
                 <div class="d-flex flex-column gap-2 small">
                     {% for factor in score_factors %}
                     <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-muted"><i class="bi {% if factor.ok %}bi-check-circle-fill text-success{% else %}bi-exclamation-circle text-warning{% endif %} me-1"></i>{{ factor.name }}</span>
-                        <span class="mono-text {% if factor.ok %}text-success{% else %}text-muted{% endif %}">{{ factor.points }}</span>
+                        <span class="text-muted">
+                            <i class="bi {% if factor.ok %}bi-check-circle-fill text-success{% else %}bi-exclamation-circle text-warning{% endif %} me-1"></i>{{ factor.name }}
+                        </span>
+                        <span class="mono-text {% if factor.ok %}text-success fw-bold{% else %}text-warning{% endif %}">
+                            {{ factor.score }}/{{ factor.max_score }}
+                        </span>
                     </div>
                     {% endfor %}
                 </div>
@@ -147,6 +151,54 @@
             </div>
         </div>
     </div>
+
+    <!-- Recommendations for Score Improvement -->
+    {% if recommendations %}
+    <div class="cyber-card p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
+                <h5 class="text-white mb-0">Recommended Actions to Maximize Security Posture</h5>
+            </div>
+            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning">{{ recommendations|length }} Opportunities</span>
+        </div>
+
+        <div class="row g-3">
+            {% for rec in recommendations %}
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="p-3 rounded bg-dark border {% if rec.severity == 'critical' %}border-danger border-opacity-50{% elif rec.severity == 'high' %}border-warning border-opacity-50{% else %}border-secondary border-opacity-25{% endif %} d-flex flex-column h-100 justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge {% if rec.severity == 'critical' %}badge-critical{% elif rec.severity == 'high' %}badge-high{% else %}badge-medium{% endif %}" style="font-size: 0.68rem;">
+                                {{ rec.severity|upper }}
+                            </span>
+                            <span class="mono-text text-success fw-bold small">{{ rec.impact }}</span>
+                        </div>
+                        <h6 class="text-white fw-bold mb-1">{{ rec.title }}</h6>
+                        <p class="text-muted small mb-3">{{ rec.description }}</p>
+                    </div>
+                    <div>
+                        <a href="{{ rec.action_url }}" class="btn btn-sm btn-cyber-primary w-100">
+                            {{ rec.action_label }} &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="cyber-card p-3 d-flex align-items-center justify-content-between bg-success bg-opacity-10 border border-success border-opacity-25">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-shield-check-fill text-success fs-3"></i>
+            <div>
+                <div class="text-white fw-bold">Optimal Defense Architecture Active</div>
+                <div class="text-muted small">All 4 defense pillars (2FA, Lockout Health, Credential Expiry, SHA-256 File Vault) are in maximum compliance.</div>
+            </div>
+        </div>
+        <span class="badge bg-success bg-opacity-25 text-success border border-success">100 / 100 SCORE</span>
+    </div>
+    {% endif %}
 
     <!-- Bottom Row: Recent Login Activity & Recent Security Events -->
     <div class="row g-3">

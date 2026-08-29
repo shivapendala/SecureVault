@@ -237,7 +237,7 @@
                         </td>
                         <td>
                             <div class="text-white small">{{ att.get_browser_info() }}</div>
-                            <small class="text-dim mono-text">{{ att.user_agent[:35] }}</small>
+                            <small class="text-dim mono-text">{{ (att.user_agent or '')[:35] }}</small>
                         </td>
                         <td>
                             {% if att.status == 'SUCCESS' %}

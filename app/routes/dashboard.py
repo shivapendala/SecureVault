@@ -85,49 +85,21 @@ def index():
 @dashboard_bp.route('/user-dashboard')
 @login_required
 def user_dashboard():
+    from app.utils.security_score import calculate_user_security_score
     user = User.query.get_or_404(session['user_id'])
     
-    # 1. Calculate Personal Security Score (0 - 100)
-    score = 50
-    score_factors = []
-    
-    if user.mfa_enabled:
-        score += 25
-        score_factors.append({'name': 'Two-Factor Authentication (2FA)', 'status': 'Enabled', 'points': '+25', 'ok': True})
-    else:
-        score_factors.append({'name': 'Two-Factor Authentication (2FA)', 'status': 'Disabled', 'points': '0', 'ok': False})
-        
-    if user.failed_login_count == 0:
-        score += 15
-        score_factors.append({'name': 'Account Health & Lockout Status', 'status': 'Clean (0 Failures)', 'points': '+15', 'ok': True})
-    else:
-        score_factors.append({'name': 'Account Health & Lockout Status', 'status': f'{user.failed_login_count} Failed Attempts', 'points': '0', 'ok': False})
+    # 1. Comprehensive Personal Security Score (0 - 100) & Recommendations
+    score_data = calculate_user_security_score(user)
+    user_score = score_data['score']
+    score_label = score_data['rating_label']
+    score_badge = score_data['rating_badge']
+    score_factors = score_data['pillars']
+    recommendations = score_data['recommendations']
 
-    # Stored passwords count and hygiene
+    # Stored passwords count
     user_passwords = Password.query.filter_by(user_id=user.id).all()
     total_passwords = len(user_passwords)
     expiring_passwords = [p for p in user_passwords if p.expires_at and p.expires_at <= datetime.utcnow() + timedelta(days=14)]
-    
-    if total_passwords > 0 and len(expiring_passwords) == 0:
-        score += 10
-        score_factors.append({'name': 'Credential Expiry & Rotation', 'status': 'Up to Date', 'points': '+10', 'ok': True})
-    elif len(expiring_passwords) > 0:
-        score_factors.append({'name': 'Credential Expiry & Rotation', 'status': f'{len(expiring_passwords)} Expiring Soon', 'points': '0', 'ok': False})
-    else:
-        score += 10
-        score_factors.append({'name': 'Credential Expiry & Rotation', 'status': 'No Overdue Keys', 'points': '+10', 'ok': True})
-        
-    user_score = max(20, min(100, score))
-    
-    if user_score >= 85:
-        score_label = "EXCELLENT"
-        score_badge = "success"
-    elif user_score >= 65:
-        score_label = "GOOD"
-        score_badge = "info"
-    else:
-        score_label = "NEEDS ATTENTION"
-        score_badge = "warning"
 
     # 2. Login Telemetry & Activity Monitoring
     recent_logins = LoginAttempt.query.filter(
@@ -169,5 +141,6 @@ def user_dashboard():
         total_failed_logins=total_failed_logins,
         last_login_attempt=last_login_attempt,
         recent_events=recent_events,
-        notifications=notifications
+        notifications=notifications,
+        recommendations=recommendations
     )
