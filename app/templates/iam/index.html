@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Identity & Access Governance (IAM / PAM) - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1">
+                    <i class="bi bi-person-badge-fill"></i> Zero-Trust IAM
+                </span>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1">
+                    <i class="bi bi-key"></i> Privileged Access Management (PAM)
+                </span>
+            </div>
+            <h2 class="h3 font-monospace fw-bold text-light mt-2 mb-1">
+                <i class="bi bi-person-gear text-primary me-2"></i>Identity & Access Governance Hub
+            </h2>
+            <p class="text-dim mb-0 small">
+                Just-in-Time (JIT) privileged access approval workflows, dynamic Attribute-Based Access Control (ABAC) policies, and session velocity anomaly detection.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('iam.request_access') }}" class="btn btn-primary">
+                <i class="bi bi-shield-plus me-1"></i> Request Elevation
+            </a>
+            <a href="{{ url_for('iam.pam_requests') }}" class="btn btn-outline-info">
+                <i class="bi bi-check2-square me-1"></i> Approval Queue
+            </a>
+            <a href="{{ url_for('iam.abac_policies') }}" class="btn btn-outline-warning">
+                <i class="bi bi-sliders me-1"></i> ABAC Policies
+            </a>
+            <a href="{{ url_for('iam.session_anomalies') }}" class="btn btn-outline-danger">
+                <i class="bi bi-geo-alt me-1"></i> Session Anomalies
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-dim small text-uppercase font-monospace">Pending JIT Requests</div>
+                            <div class="fs-3 fw-bold text-warning font-monospace mt-1">{{ pending_pam_count }}</div>
+                        </div>
+                        <div class="rounded-3 p-3 bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-dim small text-uppercase font-monospace">Active ABAC Policies</div>
+                            <div class="fs-3 fw-bold text-primary font-monospace mt-1">{{ active_policies_count }}</div>
+                        </div>
+                        <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                            <i class="bi bi-sliders fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-dim small text-uppercase font-monospace">Flagged Impossible Travel</div>
+                            <div class="fs-3 fw-bold text-danger font-monospace mt-1">{{ anomalous_sessions_count }}</div>
+                        </div>
+                        <div class="rounded-3 p-3 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                            <i class="bi bi-airplane-engines-fill fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent JIT Requests Table -->
+    <div class="card bg-dark border-secondary border-opacity-25 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title text-light h6 mb-0 font-monospace">
+                <i class="bi bi-key-fill text-warning me-2"></i>Recent PAM Elevation Requests
+            </h5>
+            <a href="{{ url_for('iam.pam_requests') }}" class="btn btn-sm btn-outline-info">View All Requests</a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_requests %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0 align-middle">
+                    <thead class="table-dark text-dim font-monospace small">
+                        <tr>
+                            <th>Requester</th>
+                            <th>Target Resource</th>
+                            <th>Requested Role</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>Created (UTC)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in recent_requests %}
+                        <tr>
+                            <td class="font-monospace text-light small fw-bold">{{ req.requester.username }}</td>
+                            <td class="font-monospace text-info small">{{ req.target_resource }}</td>
+                            <td><span class="badge bg-secondary font-monospace small">{{ req.requested_role }}</span></td>
+                            <td class="text-dim small">{{ req.duration_hours }} hrs</td>
+                            <td>
+                                {% if req.status == 'APPROVED' %}
+                                <span class="badge bg-success font-monospace">APPROVED</span>
+                                {% elif req.status == 'PENDING' %}
+                                <span class="badge bg-warning text-dark font-monospace">PENDING</span>
+                                {% else %}
+                                <span class="badge bg-danger font-monospace">{{ req.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-dim small font-monospace">{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center text-dim font-monospace">No PAM elevation requests recorded.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

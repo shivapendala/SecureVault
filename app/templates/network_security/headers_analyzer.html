@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}HTTP Security Headers Analyzer - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 font-monospace fw-bold text-light mb-1">
+                <i class="bi bi-code-square text-warning me-2"></i>HTTP Security Response Headers Audit
+            </h2>
+            <p class="text-dim mb-0 small">
+                Evaluate HTTP defense headers (HSTS, CSP, X-Frame-Options, Permissions-Policy, Referrer-Policy) against OWASP Top 10 vulnerabilities.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('network_security.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Network Hub
+            </a>
+        </div>
+    </div>
+
+    <!-- Scan Form -->
+    <div class="card bg-dark border-secondary border-opacity-25 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('network_security.headers_analyzer') }}">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-black border-secondary text-warning">
+                        <i class="bi bi-link-45deg"></i>
+                    </span>
+                    <input type="text" name="url" class="form-control bg-black border-secondary text-light font-monospace" 
+                           placeholder="Enter target URL (e.g. https://github.com or https://securevault.local)..." value="{{ url or '' }}" required>
+                    <button class="btn btn-warning px-4 text-dark fw-bold" type="submit">
+                        <i class="bi bi-search me-1"></i> Audit Security Headers
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if result %}
+    <div class="row g-4">
+        <!-- Score & Status Matrix -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-shield-check text-warning me-2"></i>Header Protection Evaluation
+                    </h5>
+                    <span class="badge {% if result.score >= 90 %}bg-success{% elif result.score >= 70 %}bg-info{% else %}bg-danger{% endif %} fs-6 font-monospace">
+                        Score: {{ result.score }}/100 (Grade {{ result.grade }})
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-light fw-bold small">Strict-Transport-Security (HSTS)</div>
+                                <div class="text-dim small">Forces HTTPS transport and prevents SSL stripping attacks.</div>
+                            </div>
+                            {% if result.hsts_present %}<span class="badge bg-success font-monospace">PASS</span>{% else %}<span class="badge bg-danger font-monospace">MISSING</span>{% endif %}
+                        </li>
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-light fw-bold small">Content-Security-Policy (CSP)</div>
+                                <div class="text-dim small">Restricts script sources and prevents XSS payload execution.</div>
+                            </div>
+                            {% if result.csp_present %}<span class="badge bg-success font-monospace">PASS</span>{% else %}<span class="badge bg-danger font-monospace">MISSING</span>{% endif %}
+                        </li>
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-light fw-bold small">X-Frame-Options (XFO)</div>
+                                <div class="text-dim small">Prevents Clickjacking UI redressing within malicious iframes.</div>
+                            </div>
+                            <span class="badge bg-info font-monospace">{{ result.x_frame_options or 'MISSING' }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-light fw-bold small">X-Content-Type-Options</div>
+                                <div class="text-dim small">Blocks MIME-type sniffing by client browsers.</div>
+                            </div>
+                            <span class="badge bg-info font-monospace">{{ result.x_content_type_options or 'MISSING' }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-light fw-bold small">Permissions-Policy</div>
+                                <div class="text-dim small">Restricts camera, microphone, and geolocation browser APIs.</div>
+                            </div>
+                            {% if result.permissions_policy %}<span class="badge bg-success font-monospace">PASS</span>{% else %}<span class="badge bg-warning text-dark font-monospace">NOT SET</span>{% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Findings & Remediation Advice -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>Security Findings & Hardening Directives
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if result.findings %}
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        {% for finding in result.findings %}
+                        <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 text-light font-monospace small">
+                            <i class="bi bi-shield-x text-danger me-2"></i>{{ finding }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-success font-monospace">
+                        <i class="bi bi-check-circle-fill fs-2 d-block mb-2"></i>
+                        Optimal HTTP response headers detected! All zero-trust baseline requirements satisfied.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

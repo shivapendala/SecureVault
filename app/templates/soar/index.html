@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}SOAR Automated Incident Playbooks - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1">
+                    <i class="bi bi-robot"></i> SOAR Automation
+                </span>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1">
+                    <i class="bi bi-lightning-charge-fill"></i> Zero-Touch Incident Containment
+                </span>
+            </div>
+            <h2 class="h3 font-monospace fw-bold text-light mt-2 mb-1">
+                <i class="bi bi-robot text-primary me-2"></i>Security Orchestration, Automation & Response (SOAR)
+            </h2>
+            <p class="text-dim mb-0 small">
+                Automated threat containment playbooks for instantaneous IP perimeter blocking, session revocation, host network isolation, and SIEM alerting.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('soar.trigger_incident') }}" class="btn btn-danger">
+                <i class="bi bi-play-circle-fill me-1"></i> Trigger Playbook
+            </a>
+            <a href="{{ url_for('soar.playbook_list') }}" class="btn btn-outline-info">
+                <i class="bi bi-journal-code me-1"></i> Playbook Catalog
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Playbooks Overview -->
+    <div class="row g-4 mb-4">
+        {% for pb in playbooks %}
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary font-monospace">{{ pb.playbook_id }}</span>
+                    <span class="badge bg-success font-monospace"><i class="bi bi-check2"></i> AUTOMATED</span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title text-light h6 mb-2 fw-bold">{{ pb.name }}</h5>
+                    <p class="text-dim small mb-3">{{ pb.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center text-dim small font-monospace">
+                        <span>Trigger: <strong class="text-warning">{{ pb.trigger_event_type }}</strong></span>
+                        <span>Executions: <strong class="text-info">{{ pb.execution_count }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Recent Execution History Table -->
+    <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+        <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title text-light h6 mb-0 font-monospace">
+                <i class="bi bi-clock-history text-warning me-2"></i>Recent Automated Playbook Executions
+            </h5>
+            <span class="badge bg-secondary font-monospace">{{ executions_count }} Executions</span>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_executions %}
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0 align-middle">
+                    <thead class="table-dark text-dim font-monospace small">
+                        <tr>
+                            <th>Incident ID</th>
+                            <th>Playbook</th>
+                            <th>Target Identifier</th>
+                            <th>Status</th>
+                            <th>Steps</th>
+                            <th>Triggered (UTC)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ex in recent_executions %}
+                        <tr>
+                            <td class="font-monospace text-warning small fw-bold">{{ ex.incident_id }}</td>
+                            <td class="text-light small fw-bold">{{ ex.playbook.name }}</td>
+                            <td class="font-monospace text-info small"><code>{{ ex.target_identifier }}</code></td>
+                            <td>
+                                {% if ex.status == 'COMPLETED' %}
+                                <span class="badge bg-success font-monospace"><i class="bi bi-check-circle-fill"></i> COMPLETED</span>
+                                {% else %}
+                                <span class="badge bg-warning font-monospace">{{ ex.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="font-monospace text-light small fw-bold">{{ ex.steps_executed }} Steps</td>
+                            <td class="font-monospace text-dim small">{{ ex.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                <a href="{{ url_for('soar.execution_detail', execution_id=ex.id) }}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i> Steps
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center text-dim font-monospace">No playbook executions recorded yet.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

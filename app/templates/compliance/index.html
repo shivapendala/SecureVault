@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Enterprise Compliance & Risk Matrix - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1">
+                    <i class="bi bi-patch-check-fill"></i> SOC 2 & ISO 27001 Certified
+                </span>
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-2 py-1">
+                    <i class="bi bi-grid-3x3"></i> NIST 5x5 Risk Matrix
+                </span>
+            </div>
+            <h2 class="h3 font-monospace fw-bold text-light mt-2 mb-1">
+                <i class="bi bi-file-earmark-check-fill text-success me-2"></i>Enterprise Compliance & Risk Matrix
+            </h2>
+            <p class="text-dim mb-0 small">
+                Continuous compliance governance auditing against SOC 2 Type II, ISO 27001:2022, and NIST SP 800-53 with 5x5 risk heatmaps and immutable evidence vaults.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('compliance.risk_matrix') }}" class="btn btn-outline-warning">
+                <i class="bi bi-grid-3x3 me-1"></i> 5x5 Risk Matrix
+            </a>
+            <a href="{{ url_for('compliance.evidence_locker') }}" class="btn btn-outline-info">
+                <i class="bi bi-lock-fill me-1"></i> Evidence Locker
+            </a>
+        </div>
+    </div>
+
+    <!-- Framework Readiness Cards -->
+    <div class="row g-4 mb-4">
+        {% for fw in frameworks %}
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-success font-monospace">{{ fw.code }}</span>
+                        <span class="text-light fw-bold ms-2">{{ fw.name }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-dim small mb-3">{{ fw.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-dim small font-monospace">Readiness Posture</span>
+                        <span class="text-success fw-bold font-monospace">{{ fw.readiness_percentage }}%</span>
+                    </div>
+                    <div class="progress bg-black mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ fw.readiness_percentage }}%;"></div>
+                    </div>
+                    <div class="d-flex justify-content-between text-dim small">
+                        <span>Controls: <strong>{{ fw.passed_controls }} / {{ fw.total_controls }} Passing</strong></span>
+                        <a href="{{ url_for('compliance.framework_details', framework_id=fw.id) }}" class="text-info text-decoration-none font-monospace small">View Controls &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Risk Summary & Recent Evidence -->
+    <div class="row g-4">
+        <!-- Risk Breakdown -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Cybersecurity Risk Register Summary
+                    </h5>
+                    <a href="{{ url_for('compliance.risk_matrix') }}" class="btn btn-sm btn-outline-warning">Explore 5x5 Heatmap</a>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3 mb-3">
+                        <div class="col-3">
+                            <div class="p-3 bg-danger bg-opacity-10 border border-danger rounded-3">
+                                <div class="fs-4 fw-bold font-monospace text-danger">{{ risk_summary.critical_risks }}</div>
+                                <div class="text-dim small">Critical</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-3 bg-warning bg-opacity-10 border border-warning rounded-3">
+                                <div class="fs-4 fw-bold font-monospace text-warning">{{ risk_summary.high_risks }}</div>
+                                <div class="text-dim small">High</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-3 bg-info bg-opacity-10 border border-info rounded-3">
+                                <div class="fs-4 fw-bold font-monospace text-info">{{ risk_summary.medium_risks }}</div>
+                                <div class="text-dim small">Medium</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-3 bg-success bg-opacity-10 border border-success rounded-3">
+                                <div class="fs-4 fw-bold font-monospace text-success">{{ risk_summary.low_risks }}</div>
+                                <div class="text-dim small">Low</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Audit Evidence -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-shield-lock-fill text-info me-2"></i>Cryptographically Sealed Evidence Records
+                    </h5>
+                    <a href="{{ url_for('compliance.evidence_locker') }}" class="btn btn-sm btn-outline-info">Seal Evidence</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_evidence %}
+                    <ul class="list-group list-group-flush bg-transparent font-monospace small">
+                        {% for ev in recent_evidence %}
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 p-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-light fw-bold">{{ ev.title }}</span>
+                                <span class="badge bg-secondary">{{ ev.framework_code }} &bull; {{ ev.control_id }}</span>
+                            </div>
+                            <div class="text-dim">Seal: <code>{{ ev.sha256_seal[:24] }}...</code> <span class="text-success">&bull; Verified Authentic</span></div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-4 text-center text-dim font-monospace">No audit evidence records created yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

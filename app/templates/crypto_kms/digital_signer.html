@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Digital Signature & Document Attestation - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 font-monospace fw-bold text-light mb-1">
+                <i class="bi bi-pen-fill text-info me-2"></i>Digital Signature & Document Attestation Studio
+            </h2>
+            <p class="text-dim mb-0 small">
+                Generate cryptographic signatures (RSA-PSS / ECDSA) for security audit evidence and verify public attestations.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('crypto_kms.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to KMS Hub
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Sign Card -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-pencil-square text-info me-2"></i>1. Sign Payload with Managed Private Key
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('crypto_kms.digital_signer') }}">
+                        <input type="hidden" name="action_type" value="sign">
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Select Managed Signing Key</label>
+                            <select name="key_id" class="form-select bg-black border-secondary text-light font-monospace">
+                                {% for k in keys %}
+                                <option value="{{ k.id }}">{{ k.key_alias }} ({{ k.algorithm }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Document / Message to Sign</label>
+                            <textarea name="message_to_sign" rows="4" class="form-control bg-black border-secondary text-light font-monospace" 
+                                      placeholder="Enter evidence or security release manifest..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="bi bi-key-fill me-1"></i> Generate Digital Signature
+                        </button>
+                    </form>
+
+                    {% if sign_result %}
+                    <div class="mt-4 p-3 bg-black rounded-3 border border-secondary border-opacity-25 font-monospace small">
+                        <div class="text-success fw-bold mb-1"><i class="bi bi-check-circle-fill"></i> Generated Signature (Base64):</div>
+                        <div class="p-2 bg-dark rounded border border-secondary border-opacity-25 text-warning text-break">
+                            {{ sign_result.signature_base64 }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Verify Card -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-shield-check text-success me-2"></i>2. Verify Signature with Public Key
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('crypto_kms.digital_signer') }}">
+                        <input type="hidden" name="action_type" value="verify">
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Original Message String</label>
+                            <input type="text" name="message_to_verify" class="form-control bg-black border-secondary text-light font-monospace" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Signature (Base64)</label>
+                            <input type="text" name="signature_b64" class="form-control bg-black border-secondary text-light font-monospace" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Signer Public Key (PEM format)</label>
+                            <textarea name="public_key_pem" rows="4" class="form-control bg-black border-secondary text-light font-monospace" 
+                                      placeholder="-----BEGIN PUBLIC KEY-----..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-shield-shaded me-1"></i> Verify Cryptographic Attestation
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

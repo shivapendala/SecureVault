@@ -83,8 +83,36 @@
                     <i class="bi bi-radar nav-icon text-success"></i>
                     <span>Cyber Scanners</span>
                 </a>
+                <a href="{{ url_for('threat_intel.index') }}" class="nav-item-link {% if request.endpoint and 'threat_intel' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-broadcast-pin nav-icon text-danger"></i>
+                    <span>Threat Intel & SIEM</span>
+                </a>
+                <a href="{{ url_for('network_security.index') }}" class="nav-item-link {% if request.endpoint and 'network_security' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-router nav-icon text-info"></i>
+                    <span>Network & TLS Sec</span>
+                </a>
+                <a href="{{ url_for('appsec.index') }}" class="nav-item-link {% if request.endpoint and 'appsec' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-shield-shaded nav-icon text-warning"></i>
+                    <span>AppSec & WAF Center</span>
+                </a>
+                <a href="{{ url_for('iam.index') }}" class="nav-item-link {% if request.endpoint and 'iam' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-person-gear nav-icon text-primary"></i>
+                    <span>IAM & PAM Governance</span>
+                </a>
+                <a href="{{ url_for('crypto_kms.index') }}" class="nav-item-link {% if request.endpoint and 'crypto_kms' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-key-fill nav-icon text-danger"></i>
+                    <span>Cryptographic KMS</span>
+                </a>
+                <a href="{{ url_for('soar.index') }}" class="nav-item-link {% if request.endpoint and 'soar' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-robot nav-icon text-primary"></i>
+                    <span>SOAR Automation</span>
+                </a>
 
                 <div class="nav-section-title">Compliance & System</div>
+                <a href="{{ url_for('compliance.index') }}" class="nav-item-link {% if request.endpoint and 'compliance' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-file-earmark-check-fill nav-icon text-success"></i>
+                    <span>Compliance &amp; Risk</span>
+                </a>
                 <a href="{{ url_for('reports.index') }}" class="nav-item-link {% if request.endpoint and 'reports' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-file-earmark-bar-graph-fill nav-icon text-warning"></i>
                     <span>Security Reports</span>

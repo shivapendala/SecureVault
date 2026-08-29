@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Enterprise 5x5 Risk Matrix & Heatmap - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 font-monospace fw-bold text-light mb-1">
+                <i class="bi bi-grid-3x3 text-warning me-2"></i>Enterprise 5x5 Cybersecurity Risk Matrix
+            </h2>
+            <p class="text-dim mb-0 small">
+                Interactive Likelihood vs Impact heat map quantifying institutional security exposures and active mitigation safeguards.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('compliance.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Compliance Hub
+            </a>
+        </div>
+    </div>
+
+    <!-- 5x5 Matrix Visualization -->
+    <div class="card bg-dark border-secondary border-opacity-25 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+            <h5 class="card-title text-light h6 mb-0 font-monospace">
+                <i class="bi bi-fire text-danger me-2"></i>Likelihood &times; Impact Heatmap Distribution
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle font-monospace mb-0" style="table-layout: fixed;">
+                    <thead>
+                        <tr class="text-dim small">
+                            <th style="width: 15%;">Likelihood \ Impact</th>
+                            <th class="bg-black text-light">1 - Insignificant</th>
+                            <th class="bg-black text-light">2 - Minor</th>
+                            <th class="bg-black text-light">3 - Moderate</th>
+                            <th class="bg-black text-light">4 - Major</th>
+                            <th class="bg-black text-light">5 - Severe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set likelihood_labels = ['5 - Almost Certain', '4 - Likely', '3 - Moderate', '2 - Unlikely', '1 - Rare'] %}
+                        {% for l_idx in [4, 3, 2, 1, 0] %}
+                        <tr>
+                            <th class="bg-black text-light small text-start">{{ likelihood_labels[4 - l_idx] }}</th>
+                            {% for i_idx in range(5) %}
+                            {% set score = (l_idx + 1) * (i_idx + 1) %}
+                            <td class="p-3 {% if score >= 20 %}bg-danger bg-opacity-25 text-danger border-danger{% elif score >= 15 %}bg-warning bg-opacity-25 text-warning border-warning{% elif score >= 8 %}bg-info bg-opacity-25 text-info border-info{% else %}bg-success bg-opacity-25 text-success border-success{% endif %}">
+                                <div class="fw-bold fs-5">{{ matrix_data.matrix[l_idx][i_idx] }}</div>
+                                <div class="small opacity-75">Score {{ score }}</div>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Register Table -->
+    <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+        <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+            <h5 class="card-title text-light h6 mb-0 font-monospace">
+                <i class="bi bi-shield-exclamation text-warning me-2"></i>Active Risk Register Items
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0 align-middle">
+                    <thead class="table-dark text-dim font-monospace small">
+                        <tr>
+                            <th>Risk ID</th>
+                            <th>Risk Title</th>
+                            <th>Category</th>
+                            <th>Likelihood &times; Impact</th>
+                            <th>Risk Rating</th>
+                            <th>Mitigation Strategy</th>
+                            <th>Owner</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in risks %}
+                        <tr>
+                            <td class="font-monospace text-warning small fw-bold">{{ r.risk_id }}</td>
+                            <td class="text-light small fw-bold">{{ r.title }}</td>
+                            <td><span class="badge bg-secondary font-monospace small">{{ r.category }}</span></td>
+                            <td class="font-monospace text-dim small">{{ r.likelihood }} &times; {{ r.impact }} = <strong class="text-light">{{ r.risk_score }}</strong></td>
+                            <td>
+                                {% if r.risk_rating == 'CRITICAL' %}
+                                <span class="badge bg-danger font-monospace">CRITICAL</span>
+                                {% elif r.risk_rating == 'HIGH' %}
+                                <span class="badge bg-warning text-dark font-monospace">HIGH</span>
+                                {% elif r.risk_rating == 'MEDIUM' %}
+                                <span class="badge bg-info text-dark font-monospace">MEDIUM</span>
+                                {% else %}
+                                <span class="badge bg-success font-monospace">LOW</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-dim small text-truncate" style="max-width: 300px;">{{ r.mitigation_strategy }}</td>
+                            <td class="font-monospace text-light small">{{ r.owner }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

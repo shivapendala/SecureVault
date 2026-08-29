@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Shamir's (k, n) Secret Sharing Workshop - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 font-monospace fw-bold text-light mb-1">
+                <i class="bi bi-pie-chart text-warning me-2"></i>Shamir's $(k, n)$ Threshold Secret Sharing Workshop
+            </h2>
+            <p class="text-dim mb-0 small">
+                Cryptographically split a master secret into $n$ distributed shares such that any $k$ shares reconstruct the secret via Lagrange polynomial interpolation.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('crypto_kms.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to KMS Hub
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Split Secret Card -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-diagram-3-fill text-warning me-2"></i>1. Split Master Secret into $n$ Shares
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('crypto_kms.shamir_workshop') }}">
+                        <input type="hidden" name="action_type" value="split">
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Secret Label / Name</label>
+                            <input type="text" name="secret_label" class="form-control bg-black border-secondary text-light font-monospace" 
+                                   value="Enclave Emergency Recovery Key">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Master Secret Payload (Passphrase / Private Token)</label>
+                            <input type="text" name="secret_payload" class="form-control bg-black border-secondary text-light font-monospace" 
+                                   placeholder="Enter secret to split (e.g. MasterVaultPass@2026!)" required>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-dim font-monospace small">Threshold $k$ (Shares needed to recover)</label>
+                                <input type="number" name="threshold_k" class="form-control bg-black border-secondary text-light font-monospace" 
+                                       min="2" max="10" value="3" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dim font-monospace small">Total Shares $n$ to generate</label>
+                                <input type="number" name="total_shares_n" class="form-control bg-black border-secondary text-light font-monospace" 
+                                       min="2" max="10" value="5" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning text-dark fw-bold w-100">
+                            <i class="bi bi-scissors me-1"></i> Generate Shamir Shares
+                        </button>
+                    </form>
+
+                    {% if split_result %}
+                    <div class="mt-4 p-3 bg-black rounded-3 border border-secondary border-opacity-25 font-monospace small">
+                        <div class="text-success fw-bold mb-2">
+                            <i class="bi bi-check-circle-fill"></i> Generated {{ split_result.total_shares_n }} Shares (Threshold: {{ split_result.threshold_k }}):
+                        </div>
+                        {% for sh in split_result.shares %}
+                        <div class="p-2 bg-dark rounded border border-secondary border-opacity-25 mb-1 text-info text-break">
+                            {{ sh }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Reconstruct Secret Card -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-arrow-repeat text-info me-2"></i>2. Reconstruct Secret from $k$ Shares
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('crypto_kms.shamir_workshop') }}">
+                        <input type="hidden" name="action_type" value="combine">
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Enter at least $k$ share strings (one per line)</label>
+                            <textarea name="shares_input" rows="7" class="form-control bg-black border-secondary text-light font-monospace" 
+                                      placeholder="1-2f89a...&#10;2-3e71b...&#10;3-9a11c..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="bi bi-unlock-fill me-1"></i> Reconstruct Master Secret
+                        </button>
+                    </form>
+
+                    {% if reconstructed_secret %}
+                    <div class="mt-4 p-3 bg-black rounded-3 border border-success border-opacity-25 font-monospace">
+                        <div class="text-success small fw-bold mb-1"><i class="bi bi-shield-check"></i> Reconstructed Secret:</div>
+                        <div class="fs-5 text-light fw-bold bg-dark p-2 rounded border border-secondary border-opacity-25">
+                            {{ reconstructed_secret }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

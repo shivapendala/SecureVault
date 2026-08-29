@@ -11,6 +11,13 @@ from app.models.vulnerability import Vulnerability
 from app.models.incident import Incident
 from app.models.audit import AuditLog
 from app.models.scan import ScanReport
+from app.models.threat_intel import ThreatIndicator, ThreatFeedSource, IoCMatchEvent, MitreAttackTechnique
+from app.models.network_security import TlsCertificateScan, HttpSecurityHeadersScan, DnsSecRecordScan, PortScanResult
+from app.models.appsec import WafRule, WafSecurityEvent, SecretLeakFinding, ScaDependencyFinding
+from app.models.iam import AccessRequest, PermissionPolicy, UserSessionTelemetry
+from app.models.crypto_kms import AsymmetricKeyPair, KeyRotationLog, SecretShareRecord
+from app.models.compliance import ComplianceFramework, ComplianceControl, RiskRegisterItem, AuditEvidence
+from app.models.soar import SoarPlaybook, PlaybookExecution, PlaybookStep
 
 __all__ = [
     'User',
@@ -25,5 +32,30 @@ __all__ = [
     'Vulnerability',
     'Incident',
     'AuditLog',
-    'ScanReport'
+    'ScanReport',
+    'ThreatIndicator',
+    'ThreatFeedSource',
+    'IoCMatchEvent',
+    'MitreAttackTechnique',
+    'TlsCertificateScan',
+    'HttpSecurityHeadersScan',
+    'DnsSecRecordScan',
+    'PortScanResult',
+    'WafRule',
+    'WafSecurityEvent',
+    'SecretLeakFinding',
+    'ScaDependencyFinding',
+    'AccessRequest',
+    'PermissionPolicy',
+    'UserSessionTelemetry',
+    'AsymmetricKeyPair',
+    'KeyRotationLog',
+    'SecretShareRecord',
+    'ComplianceFramework',
+    'ComplianceControl',
+    'RiskRegisterItem',
+    'AuditEvidence',
+    'SoarPlaybook',
+    'PlaybookExecution',
+    'PlaybookStep'
 ]

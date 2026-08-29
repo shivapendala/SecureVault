@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Network & TLS Security Operations - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-info bg-opacity-10 text-info border border-info px-2 py-1">
+                    <i class="bi bi-shield-lock-fill"></i> Transport Layer Defense
+                </span>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1">
+                    <i class="bi bi-hdd-network"></i> Perimeter Inspection
+                </span>
+            </div>
+            <h2 class="h3 font-monospace fw-bold text-light mt-2 mb-1">
+                <i class="bi bi-router text-info me-2"></i>Network, TLS & Perimeter Security Hub
+            </h2>
+            <p class="text-dim mb-0 small">
+                Continuous cryptographic audit of X.509 TLS/SSL certificates, HTTP security header compliance, DNSSEC / DMARC email spoofing resistance, and port telemetry.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('network_security.tls_inspector') }}" class="btn btn-outline-info">
+                <i class="bi bi-lock-fill me-1"></i> TLS Certificate Inspector
+            </a>
+            <a href="{{ url_for('network_security.headers_analyzer') }}" class="btn btn-outline-warning">
+                <i class="bi bi-code-square me-1"></i> HTTP Headers Audit
+            </a>
+            <a href="{{ url_for('network_security.dns_defense') }}" class="btn btn-outline-success">
+                <i class="bi bi-globe2 me-1"></i> DNS & DMARC Defense
+            </a>
+            <a href="{{ url_for('network_security.port_scanner') }}" class="btn btn-outline-danger">
+                <i class="bi bi-plug me-1"></i> Port Scanner
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 Subsystem Status Overview Cards -->
+    <div class="row g-4 mb-4">
+        <!-- TLS Posture Card -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-shield-check text-info me-2"></i>Recent TLS / SSL Certificates Audited
+                    </h5>
+                    <a href="{{ url_for('network_security.tls_inspector') }}" class="btn btn-sm btn-outline-info">Launch Scanner</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_tls %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 align-middle">
+                            <thead class="table-dark text-dim font-monospace small">
+                                <tr>
+                                    <th>Target Host</th>
+                                    <th>TLS Version</th>
+                                    <th>Days Left</th>
+                                    <th>Grade</th>
+                                    <th>Audit Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in recent_tls %}
+                                <tr>
+                                    <td class="font-monospace text-light small fw-bold">{{ item.target_host }}</td>
+                                    <td><span class="badge bg-secondary font-monospace small">{{ item.tls_version }}</span></td>
+                                    <td class="font-monospace small {% if item.days_remaining < 30 %}text-warning{% else %}text-success{% endif %}">
+                                        {{ item.days_remaining }} days
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if item.grade == 'A+' %}bg-success{% elif item.grade == 'A' %}bg-info{% else %}bg-warning text-dark{% endif %} font-monospace">
+                                            {{ item.grade }}
+                                        </span>
+                                    </td>
+                                    <td class="text-dim small font-monospace">{{ item.scanned_at.strftime('%H:%M UTC') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-dim font-monospace">No TLS scans recorded. Run a certificate audit above.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Headers Card -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-file-earmark-code-fill text-warning me-2"></i>HTTP Security Response Headers
+                    </h5>
+                    <a href="{{ url_for('network_security.headers_analyzer') }}" class="btn btn-sm btn-outline-warning">Audit URL</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_headers %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 align-middle">
+                            <thead class="table-dark text-dim font-monospace small">
+                                <tr>
+                                    <th>Target URL</th>
+                                    <th>HSTS</th>
+                                    <th>CSP</th>
+                                    <th>XFO</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in recent_headers %}
+                                <tr>
+                                    <td class="font-monospace text-light small text-truncate" style="max-width: 180px;">{{ h.target_url }}</td>
+                                    <td>
+                                        {% if h.hsts_present %}<span class="badge bg-success font-monospace small">PASS</span>{% else %}<span class="badge bg-danger font-monospace small">FAIL</span>{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if h.csp_present %}<span class="badge bg-success font-monospace small">PASS</span>{% else %}<span class="badge bg-danger font-monospace small">FAIL</span>{% endif %}
+                                    </td>
+                                    <td><span class="badge bg-secondary font-monospace small">{{ h.x_frame_options or 'NONE' }}</span></td>
+                                    <td><span class="badge bg-info font-monospace">{{ h.score }}/100</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-dim font-monospace">No HTTP header scans recorded yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lower Row: DNS & Open Port Telemetry -->
+    <div class="row g-4">
+        <!-- DNS Defense Card -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-envelope-check-fill text-success me-2"></i>DNSSEC & Anti-Spoofing Records
+                    </h5>
+                    <a href="{{ url_for('network_security.dns_defense') }}" class="btn btn-sm btn-outline-success">Inspect Domain</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_dns %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 align-middle">
+                            <thead class="table-dark text-dim font-monospace small">
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>DNSSEC</th>
+                                    <th>DMARC Policy</th>
+                                    <th>Resistance Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in recent_dns %}
+                                <tr>
+                                    <td class="font-monospace text-light small fw-bold">{{ d.domain_name }}</td>
+                                    <td>{% if d.dnssec_enabled %}<span class="badge bg-success font-monospace small">ACTIVE</span>{% else %}<span class="badge bg-secondary font-monospace small">DISABLED</span>{% endif %}</td>
+                                    <td><span class="badge bg-info font-monospace small">{{ d.dmarc_policy }}</span></td>
+                                    <td><span class="badge bg-success font-monospace">{{ d.spoofing_resistance_score }}/100</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-dim font-monospace">No DNS security records evaluated yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Port Telemetry -->
+        <div class="col-lg-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-hdd-rack-fill text-danger me-2"></i>Perimeter Open Port Fingerprints
+                    </h5>
+                    <a href="{{ url_for('network_security.port_scanner') }}" class="btn btn-sm btn-outline-danger">Run Port Scan</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_ports %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 align-middle">
+                            <thead class="table-dark text-dim font-monospace small">
+                                <tr>
+                                    <th>Host</th>
+                                    <th>Port</th>
+                                    <th>Service</th>
+                                    <th>State</th>
+                                    <th>Risk Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in recent_ports %}
+                                <tr>
+                                    <td class="font-monospace text-light small">{{ p.target_ip }}</td>
+                                    <td class="font-monospace text-info small fw-bold">{{ p.port_number }}</td>
+                                    <td><span class="badge bg-secondary font-monospace small">{{ p.service_name }}</span></td>
+                                    <td><span class="badge bg-success font-monospace small">{{ p.state }}</span></td>
+                                    <td><span class="badge {% if p.risk_level == 'CRITICAL' %}bg-danger{% elif p.risk_level == 'HIGH' %}bg-warning text-dark{% else %}bg-secondary{% endif %} font-monospace small">{{ p.risk_level }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-dim font-monospace">No open ports recorded in perimeter database.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

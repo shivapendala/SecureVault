@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Enroll Threat Indicator - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 font-monospace fw-bold text-light mb-1">
+                <i class="bi bi-shield-plus text-danger me-2"></i>Enroll Indicator of Compromise (IoC)
+            </h2>
+            <p class="text-dim mb-0 small">
+                Register a new malicious network or file artifact into the Zero-Trust Threat Intelligence repository.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('threat_intel.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Threat Center
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card bg-dark border-secondary border-opacity-25 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-file-earmark-code text-danger me-2"></i>IoC Intelligence Specification Form
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('threat_intel.add_ioc') }}">
+                        <div class="mb-3">
+                            <label class="form-label text-dim font-monospace small">Indicator Value (IP, SHA-256, Domain, URL, or CVE) *</label>
+                            <input type="text" name="indicator_value" class="form-control bg-black border-secondary text-light font-monospace" 
+                                   placeholder="e.g. 198.51.100.25 or malicious-c2-payload.exe hash" required>
+                            <div class="form-text text-dim small">The engine will automatically detect whether the value is an IP, SHA-256, MD5, Domain, or URL.</div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-dim font-monospace small">Threat Category *</label>
+                                <select name="threat_type" class="form-select bg-black border-secondary text-light font-monospace">
+                                    <option value="Malware">Malware</option>
+                                    <option value="Phishing">Phishing</option>
+                                    <option value="C2">Command & Control (C2)</option>
+                                    <option value="Ransomware">Ransomware</option>
+                                    <option value="TorExit">Tor Exit Node</option>
+                                    <option value="Scanner">Vulnerability Scanner</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dim font-monospace small">Severity Rating *</label>
+                                <select name="severity" class="form-select bg-black border-secondary text-light font-monospace">
+                                    <option value="CRITICAL">CRITICAL (Automated Block)</option>
+                                    <option value="HIGH" selected>HIGH (Flag Alert)</option>
+                                    <option value="MEDIUM">MEDIUM</option>
+                                    <option value="LOW">LOW</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-dim font-monospace small">Confidence Score (0 - 100) *</label>
+                                <input type="number" name="confidence_score" class="form-control bg-black border-secondary text-light font-monospace" 
+                                       min="1" max="100" value="85" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dim font-monospace small">MITRE ATT&CK Technique Mapping</label>
+                                <select name="mitre_technique_id" class="form-select bg-black border-secondary text-light font-monospace">
+                                    <option value="">-- Optional Technique --</option>
+                                    {% for tech in techniques %}
+                                    <option value="{{ tech.technique_id }}">{{ tech.technique_id }} - {{ tech.technique_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-dim font-monospace small">Intelligence Notes & Incident Context</label>
+                            <textarea name="description" rows="3" class="form-control bg-black border-secondary text-light font-monospace" 
+                                      placeholder="Observed in SOC triage incident report #..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('threat_intel.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-shield-lock-fill me-1"></i> Commit IoC to Threat Matrix
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

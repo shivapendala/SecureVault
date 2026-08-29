@@ -51,10 +51,10 @@ def new_user_factory(db_session):
     """Factory fixture to generate unique clean users for testing."""
     created_users = []
 
-    def _create_user(role='Analyst', status='Active', mfa=False):
+    def _create_user(role='Analyst', status='Active', mfa=False, username=None):
         unique_id = uuid.uuid4().hex[:6]
         user = User(
-            username=f"test_op_{unique_id}",
+            username=username or f"test_op_{unique_id}",
             email=f"operator_{unique_id}@securevault.io",
             full_name=f"Test Operator {unique_id}",
             role=role,

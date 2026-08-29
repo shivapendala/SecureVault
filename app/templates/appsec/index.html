@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Application Security & WAF Center - SecureVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-2 py-1">
+                    <i class="bi bi-shield-shaded"></i> WAF Layer 7 Firewall
+                </span>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1">
+                    <i class="bi bi-bug"></i> SAST / Secret Detection
+                </span>
+            </div>
+            <h2 class="h3 font-monospace fw-bold text-light mt-2 mb-1">
+                <i class="bi bi-shield-check text-warning me-2"></i>Application Security & WAF Center
+            </h2>
+            <p class="text-dim mb-0 small">
+                Continuous Web Application Firewall (WAF) OWASP Top 10 rule enforcement, credential secret leak scanning, and SCA dependency CVE auditing.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('appsec.waf_monitor') }}" class="btn btn-outline-warning">
+                <i class="bi bi-cpu me-1"></i> WAF Traffic Monitor
+            </a>
+            <a href="{{ url_for('appsec.secret_scanner') }}" class="btn btn-outline-danger">
+                <i class="bi bi-key-fill me-1"></i> Secret Scanner
+            </a>
+            <a href="{{ url_for('appsec.sca_auditor') }}" class="btn btn-outline-info">
+                <i class="bi bi-boxes me-1"></i> SCA Dependency Auditor
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-dim small text-uppercase font-monospace">Active WAF Rules</div>
+                            <div class="fs-3 fw-bold text-light font-monospace mt-1">{{ total_rules }}</div>
+                        </div>
+                        <div class="rounded-3 p-3 bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
+                            <i class="bi bi-shield-lock fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-dim small text-uppercase font-monospace">Blocked Attack Payloads</div>
+                            <div class="fs-3 fw-bold text-danger font-monospace mt-1">{{ total_waf_blocks }}</div>
+                        </div>
+                        <div class="rounded-3 p-3 bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                            <i class="bi bi-slash-circle-fill fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-dim small text-uppercase font-monospace">Leaked Secrets Flagged</div>
+                            <div class="fs-3 fw-bold text-warning font-monospace mt-1">{{ open_secrets }}</div>
+                        </div>
+                        <div class="rounded-3 p-3 bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
+                            <i class="bi bi-key-fill fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-dim small text-uppercase font-monospace">SCA Vulnerabilities</div>
+                            <div class="fs-3 fw-bold text-info font-monospace mt-1">{{ sca_count }}</div>
+                        </div>
+                        <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                            <i class="bi bi-boxes fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content: WAF Interception Stream & Secret Findings -->
+    <div class="row g-4 mb-4">
+        <!-- WAF Stream -->
+        <div class="col-lg-7">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-activity text-danger me-2"></i>Live WAF Interception Stream
+                    </h5>
+                    <span class="badge bg-danger bg-opacity-20 text-danger border border-danger font-monospace small">Layer 7 Protected</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_waf_events %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 align-middle">
+                            <thead class="table-dark text-dim font-monospace small">
+                                <tr>
+                                    <th>Rule ID</th>
+                                    <th>Category</th>
+                                    <th>Client IP</th>
+                                    <th>Action</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for evt in recent_waf_events %}
+                                <tr>
+                                    <td class="font-monospace text-warning small fw-bold">{{ evt.rule_id }}</td>
+                                    <td><span class="badge bg-secondary font-monospace small">{{ evt.category }}</span></td>
+                                    <td class="font-monospace text-light small">{{ evt.client_ip }}</td>
+                                    <td><span class="badge bg-danger font-monospace">{{ evt.action_taken }}</span></td>
+                                    <td class="text-dim small font-monospace">{{ evt.created_at.strftime('%H:%M:%S UTC') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-dim font-monospace">No malicious payloads intercepted in current window.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Secret Findings -->
+        <div class="col-lg-5">
+            <div class="card bg-dark border-secondary border-opacity-25 h-100 shadow-sm">
+                <div class="card-header bg-transparent border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title text-light h6 mb-0 font-monospace">
+                        <i class="bi bi-shield-lock-fill text-warning me-2"></i>Secret Exposure Findings
+                    </h5>
+                    <a href="{{ url_for('appsec.secret_scanner') }}" class="btn btn-sm btn-outline-danger">Run Scanner</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_secrets %}
+                    <ul class="list-group list-group-flush bg-transparent">
+                        {% for s in recent_secrets %}
+                        <li class="list-group-item bg-transparent border-secondary border-opacity-25 p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-danger font-monospace small">{{ s.secret_type }}</span>
+                                <span class="badge bg-secondary font-monospace small">Line {{ s.line_number }}</span>
+                            </div>
+                            <div class="font-monospace small text-warning bg-black p-2 rounded border border-secondary border-opacity-25 mt-2">
+                                <code>{{ s.snippet_masked }}</code>
+                            </div>
+                            <div class="d-flex justify-content-between text-dim small mt-2">
+                                <span>File: <code>{{ s.file_path }}</code></span>
+                                <span>Status: <strong class="text-danger">{{ s.status }}</strong></span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-4 text-center text-dim font-monospace">No secret leaks detected in codebase.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
