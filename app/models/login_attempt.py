@@ -38,9 +38,9 @@ class LoginAttempt(db.Model):
         # Determine Browser
         if "edg" in ua:
             browser = "Edge"
-        elif "chrome" in ua and "safari" in ua:
+        elif "chrome" in ua:
             browser = "Chrome"
-        elif "safari" in ua and "chrome" not in ua:
+        elif "safari" in ua:
             browser = "Safari"
         elif "firefox" in ua:
             browser = "Firefox"
