@@ -289,7 +289,7 @@ def seed_database():
         expires_at=datetime.utcnow() + timedelta(days=45),
         created_by_id=admin.id
     )
-    s1.set_secret('AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
+    s1.set_secret('MOCK_CLOUD_IAM_KEY_99214:mock_wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
 
     s2 = SecretVault(
         title='Production Master MySQL Root Database Password',
