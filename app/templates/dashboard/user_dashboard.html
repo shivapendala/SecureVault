@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}User Security Dashboard - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="mb-0 text-white">Hello, {{ user.full_name or user.username }}</h2>
+                <span class="role-pill">{{ user.role }} Tier</span>
+            </div>
+            <p class="text-muted small mb-0">
+                <i class="bi bi-clock-history me-1"></i>Last authenticated: <span class="mono-text text-info">{{ user.last_login.strftime('%Y-%m-%d %H:%M:%S UTC') if user.last_login else 'Current Session' }}</span> &bull; Status: <span class="text-success fw-semibold">{{ user.status }}</span>
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('auth.profile') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-person-gear me-1"></i>Security Settings
+            </a>
+            <a href="{{ url_for('vault.create') }}" class="btn btn-cyber-primary">
+                <i class="bi bi-plus-lg me-1"></i>Store New Key
+            </a>
+        </div>
+    </div>
+
+    <!-- Top Row: Security Score, Password Status, Account Information -->
+    <div class="row g-3">
+        <!-- 1. Security Score Card -->
+        <div class="col-12 col-lg-4">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="stat-label">Personal Security Score</div>
+                        <div class="display-4 fw-bold text-{{ score_badge }} my-1">{{ user_score }}<small class="fs-6 text-muted">/100</small></div>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-cyan">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                </div>
+
+                <div class="progress bg-dark mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-{{ score_badge }}" style="width: {{ user_score }}%;"></div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted small">Rating Assessment:</span>
+                    <span class="badge bg-{{ score_badge }} bg-opacity-20 text-{{ score_badge }} border border-{{ score_badge }}">
+                        {{ score_label }}
+                    </span>
+                </div>
+
+                <div class="card-header-cyber p-0 mb-2 mt-2">
+                    <span class="text-white small fw-bold">Score Breakdown:</span>
+                </div>
+                <div class="d-flex flex-column gap-2 small">
+                    {% for factor in score_factors %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="bi {% if factor.ok %}bi-check-circle-fill text-success{% else %}bi-exclamation-circle text-warning{% endif %} me-1"></i>{{ factor.name }}</span>
+                        <span class="mono-text {% if factor.ok %}text-success{% else %}text-muted{% endif %}">{{ factor.points }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Account Information Card -->
+        <div class="col-12 col-lg-4">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="stat-label">Operator Account Info</div>
+                        <h4 class="text-white my-1">{{ user.username }}</h4>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-emerald">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2 small mt-2">
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2">
+                        <span class="text-muted">Legal Name:</span>
+                        <span class="text-white fw-semibold">{{ user.full_name or 'Not set' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2">
+                        <span class="text-muted">Corporate Email:</span>
+                        <span class="mono-text text-info">{{ user.email }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2">
+                        <span class="text-muted">Department:</span>
+                        <span class="text-white">{{ user.department }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2">
+                        <span class="text-muted">Clearance Tier:</span>
+                        <span class="badge bg-dark border border-secondary text-info">{{ user.role }} Level</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2">
+                        <span class="text-muted">Hardware 2FA:</span>
+                        <span class="text-success"><i class="bi bi-shield-lock-fill me-1"></i>Enforced</span>
+                    </div>
+                    <div class="d-flex justify-content-between pt-1">
+                        <span class="text-muted">Enrolled Since:</span>
+                        <span class="mono-text text-dim">{{ user.created_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Password Status & Vault Summary -->
+        <div class="col-12 col-lg-4">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="stat-label">Credential Vault Status</div>
+                        <div class="stat-value text-info">{{ total_passwords }} <small class="fs-6 text-muted">Passwords</small></div>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-amber">
+                        <i class="bi bi-key"></i>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2 small mb-3">
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2">
+                        <span class="text-muted">Rotation Health:</span>
+                        {% if expiring_passwords_count == 0 %}
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success">All Active & Healthy</span>
+                        {% else %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning border border-warning">{{ expiring_passwords_count }} Needs Rotation</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2">
+                        <span class="text-muted">Master Encryption:</span>
+                        <span class="mono-text text-info">AES-256-GCM</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Failed Login Lockouts:</span>
+                        <span class="text-success fw-semibold">0 (Account Clean)</span>
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-2">
+                    <a href="{{ url_for('vault.index') }}" class="btn btn-cyber-outline w-100 btn-sm">
+                        <i class="bi bi-box-arrow-in-up-right me-1"></i>Open Encrypted Vault
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Recent Login Activity & Recent Security Events -->
+    <div class="row g-3">
+        <!-- Recent Login Activity -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card h-100">
+                <div class="card-header-cyber">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-box-arrow-in-right text-info"></i>
+                        <h5 class="mb-0 text-white">Recent Login Activity</h5>
+                    </div>
+                    <span class="badge bg-dark border border-secondary text-dim">Personal Telemetry</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="cyber-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>IP Address</th>
+                                <th>Client / Device</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for login in recent_logins %}
+                            <tr>
+                                <td class="mono-text small text-dim">{{ login.attempted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td class="mono-text text-white small">{{ login.ip_address }}</td>
+                                <td class="text-muted small">{{ login.user_agent[:35] if login.user_agent else 'Standard Web Browser' }}...</td>
+                                <td>
+                                    <span class="badge {% if login.status == 'SUCCESS' %}bg-success bg-opacity-25 text-success border border-success{% elif login.status == 'BLOCKED' %}bg-danger bg-opacity-25 text-danger border border-danger{% else %}bg-warning bg-opacity-25 text-warning border border-warning{% endif %}">
+                                        {{ login.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No recent login records.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Security Events -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card h-100">
+                <div class="card-header-cyber">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-exclamation text-warning"></i>
+                        <h5 class="mb-0 text-white">Recent Security Events</h5>
+                    </div>
+                    <span class="badge bg-dark border border-secondary text-dim">Audit Logs</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="cyber-table">
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Details</th>
+                                <th>Severity</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ev in recent_events %}
+                            <tr>
+                                <td>
+                                    <span class="mono-text badge bg-dark border border-secondary text-info">{{ ev.event_type }}</span>
+                                </td>
+                                <td class="text-muted small">{{ ev.details[:40] }}...</td>
+                                <td>
+                                    <span class="badge {% if ev.severity == 'CRITICAL' %}badge-critical{% elif ev.severity == 'HIGH' %}badge-high{% elif ev.severity == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">
+                                        {{ ev.severity }}
+                                    </span>
+                                </td>
+                                <td class="mono-text small text-dim">{{ ev.created_at.strftime('%H:%M:%S') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No security events triggered.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Alerts & Notifications -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-bell text-info"></i>
+                <h5 class="mb-0 text-white">Security Alerts & System Notifications</h5>
+            </div>
+            <span class="badge bg-info bg-opacity-10 text-info border border-info">{{ notifications|length }} Notifications</span>
+        </div>
+        <div class="p-3">
+            <div class="d-flex flex-column gap-2">
+                {% for n in notifications %}
+                <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 d-flex justify-content-between align-items-start">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="bi {% if n.category == 'threat' %}bi-exclamation-octagon-fill text-danger fs-5{% elif n.category == 'reminder' %}bi-clock-fill text-warning fs-5{% else %}bi-shield-check text-info fs-5{% endif %} mt-1"></i>
+                        <div>
+                            <div class="fw-bold text-white">{{ n.title }}</div>
+                            <div class="text-muted small">{{ n.message }}</div>
+                            <small class="mono-text text-dim">{{ n.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</small>
+                        </div>
+                    </div>
+                    <span class="badge {% if n.priority == 'high' %}badge-critical{% else %}badge-medium{% endif %}">
+                        {{ n.priority|upper }} PRIORITY
+                    </span>
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-muted">No unread notifications.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

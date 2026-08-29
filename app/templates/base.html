@@ -37,7 +37,11 @@
                 <div class="nav-section-title">Operations Center</div>
                 <a href="{{ url_for('dashboard.index') }}" class="nav-item-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
                     <i class="bi bi-grid-1x2-fill nav-icon"></i>
-                    <span>SOC Dashboard</span>
+                    <span>SOC Operations</span>
+                </a>
+                <a href="{{ url_for('dashboard.user_dashboard') }}" class="nav-item-link {% if request.endpoint == 'dashboard.user_dashboard' %}active{% endif %}">
+                    <i class="bi bi-person-workspace nav-icon text-info"></i>
+                    <span>User Dashboard</span>
                 </a>
 
                 <div class="nav-section-title">Security Modules</div>

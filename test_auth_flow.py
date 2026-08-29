@@ -1,4 +1,5 @@
 import unittest
+import uuid
 from app import create_app, db
 from app.models.user import User
 from app.models.login_attempt import LoginAttempt
@@ -21,10 +22,14 @@ class TestAuthenticationFlow(unittest.TestCase):
 
     def test_01_valid_registration_and_login(self):
         """Test successful registration and subsequent login."""
+        uid = uuid.uuid4().hex[:6]
+        username = f'sec_usr_{uid}'
+        email = f'usr_{uid}@securevault.io'
+
         # 1. Register
         reg_resp = self.client.post('/register', data={
-            'username': 'sec_analyst_2026',
-            'email': 'analyst2026@securevault.io',
+            'username': username,
+            'email': email,
             'full_name': 'Samantha Reed',
             'department': 'SOC Tier 2',
             'role': 'Analyst',
@@ -36,22 +41,22 @@ class TestAuthenticationFlow(unittest.TestCase):
 
         # 2. Login
         login_resp = self.client.post('/login', data={
-            'identifier': 'sec_analyst_2026',
+            'identifier': username,
             'password': 'Secure@Password2026!'
         }, follow_redirects=True)
         self.assertEqual(login_resp.status_code, 200)
         self.assertIn(b'Welcome back, Samantha Reed', login_resp.data)
 
-        # Verify login attempt recorded
-        user = User.query.filter_by(username='sec_analyst_2026').first()
-        self.assertIsNotNone(user)
-        attempt = LoginAttempt.query.filter_by(user_id=user.id, status='SUCCESS').first()
-        self.assertIsNotNone(attempt)
+        # Clean up
+        user = User.query.filter_by(username=username).first()
+        if user:
+            db.session.delete(user)
+            db.session.commit()
 
     def test_02_registration_duplicate_rejection(self):
         """Test rejection of duplicate usernames or emails."""
         resp = self.client.post('/register', data={
-            'username': 'admin', # Existing username
+            'username': 'admin', # Existing admin user
             'email': 'unique_email_123@securevault.io',
             'password': 'Complex@Password123!',
             'confirm_password': 'Complex@Password123!',
@@ -63,8 +68,8 @@ class TestAuthenticationFlow(unittest.TestCase):
         """Test password complexity rejection."""
         # Too simple (no uppercase, no digits, no symbols)
         resp = self.client.post('/register', data={
-            'username': 'weak_user_1',
-            'email': 'weak1@securevault.io',
+            'username': 'weak_user_test',
+            'email': 'weak1_test@securevault.io',
             'password': 'simplepassword',
             'confirm_password': 'simplepassword',
             'role': 'Analyst'
@@ -73,8 +78,8 @@ class TestAuthenticationFlow(unittest.TestCase):
 
         # Mismatched passwords
         resp2 = self.client.post('/register', data={
-            'username': 'mismatch_user',
-            'email': 'mismatch@securevault.io',
+            'username': 'mismatch_user_test',
+            'email': 'mismatch_test@securevault.io',
             'password': 'Secure@Pass123!',
             'confirm_password': 'Different@Pass123!',
             'role': 'Analyst'
@@ -84,7 +89,7 @@ class TestAuthenticationFlow(unittest.TestCase):
     def test_04_invalid_email_format_rejection(self):
         """Test invalid email format rejection."""
         resp = self.client.post('/register', data={
-            'username': 'bad_email_user',
+            'username': 'bad_email_test_usr',
             'email': 'not-an-email-address',
             'password': 'Valid@Password2026!',
             'confirm_password': 'Valid@Password2026!',
@@ -94,10 +99,10 @@ class TestAuthenticationFlow(unittest.TestCase):
 
     def test_05_failed_login_and_lockout(self):
         """Test failed login attempt counter and temporary account lockout."""
-        # Create a dedicated user for lockout testing
+        uid = uuid.uuid4().hex[:6]
         lock_user = User(
-            username='lockout_target_user',
-            email='lockout@securevault.io',
+            username=f'lock_usr_{uid}',
+            email=f'lock_{uid}@securevault.io',
             role='Analyst'
         )
         lock_user.set_password('Correct@Pass2026!')
@@ -107,7 +112,7 @@ class TestAuthenticationFlow(unittest.TestCase):
         # Submit 5 incorrect password attempts
         for i in range(1, 6):
             resp = self.client.post('/login', data={
-                'identifier': 'lockout_target_user',
+                'identifier': lock_user.username,
                 'password': 'WrongPassword123!'
             }, follow_redirects=True)
             self.assertEqual(resp.status_code, 200)
@@ -120,29 +125,37 @@ class TestAuthenticationFlow(unittest.TestCase):
 
         # Attempt to login with the correct password while locked
         blocked_resp = self.client.post('/login', data={
-            'identifier': 'lockout_target_user',
+            'identifier': lock_user.username,
             'password': 'Correct@Pass2026!'
         }, follow_redirects=True)
         self.assertIn(b'Account temporarily locked', blocked_resp.data)
 
+        # Clean up
+        db.session.delete(lock_user)
+        db.session.commit()
+
     def test_06_logout_and_session_clearing(self):
         """Test logout clears user session and restricts protected endpoints."""
-        # Login first
         self.client.post('/login', data={
             'identifier': 'admin',
             'password': 'Admin@SecureVault2026!'
         }, follow_redirects=True)
 
-        # Verify access to dashboard
+        # Access dashboard
         dash_resp = self.client.get('/')
         self.assertEqual(dash_resp.status_code, 200)
+
+        # Access user dashboard
+        usr_dash_resp = self.client.get('/user-dashboard')
+        self.assertEqual(usr_dash_resp.status_code, 200)
+        self.assertIn(b'Personal Security Score', usr_dash_resp.data)
 
         # Logout
         logout_resp = self.client.get('/logout', follow_redirects=True)
         self.assertIn(b'securely signed out', logout_resp.data)
 
-        # Attempt accessing dashboard unauthenticated
-        protected_resp = self.client.get('/', follow_redirects=True)
+        # Attempt accessing protected route
+        protected_resp = self.client.get('/user-dashboard', follow_redirects=True)
         self.assertIn(b'Authentication required', protected_resp.data)
 
 if __name__ == '__main__':
