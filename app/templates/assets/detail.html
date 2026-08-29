@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Details - {{ asset.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('assets.index') }}" class="btn btn-sm btn-cyber-outline py-0 px-2"><i class="bi bi-arrow-left"></i></a>
+                <h2 class="mb-0 text-white">{{ asset.name }}</h2>
+                <span class="badge {% if asset.status == 'Active' %}bg-success bg-opacity-20 text-success border border-success{% elif asset.status == 'Isolated' %}bg-danger bg-opacity-25 text-danger border border-danger{% else %}bg-secondary text-white{% endif %}">
+                    {{ asset.status }}
+                </span>
+            </div>
+            <p class="text-muted small mb-0">{{ asset.asset_type }} &bull; FQDN: <span class="mono-text text-info">{{ asset.fqdn or 'N/A' }}</span> &bull; IP: <span class="mono-text text-white">{{ asset.ip_address or 'N/A' }}</span></p>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-cyber-outline" onclick="runAssetPortScan('{{ asset.id }}')">
+                <i class="bi bi-radar me-1"></i>Run Live Port Recon
+            </button>
+            <form method="POST" action="{{ url_for('assets.toggle_isolation', asset_id=asset.id) }}">
+                <button type="submit" class="btn {% if asset.status == 'Isolated' %}btn-success{% else %}btn-danger{% endif %}">
+                    <i class="bi bi-shield-x me-1"></i>{% if asset.status == 'Isolated' %}De-isolate & Reconnect{% else %}Quarantine & Isolate Asset{% endif %}
+                </button>
+            </form>
+            {% if current_user_role == 'Admin' %}
+            <form method="POST" action="{{ url_for('assets.delete', asset_id=asset.id) }}" onsubmit="return confirm('Delete this asset from inventory?');">
+                <button type="submit" class="btn btn-cyber-outline text-danger">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Asset Properties Grid -->
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-info-circle text-info me-2"></i>Node Telemetry</h6>
+                <div class="d-flex flex-column gap-2 small">
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Environment:</span>
+                        <span class="text-white">{{ asset.environment }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Criticality:</span>
+                        <span class="badge badge-high">{{ asset.criticality }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Security Agent:</span>
+                        <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Active / EDR Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Custodian / Owner:</span>
+                        <span class="text-white">{{ asset.owner }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Last Scanned:</span>
+                        <span class="mono-text text-dim">{{ asset.last_scan_date.strftime('%Y-%m-%d %H:%M') if asset.last_scan_date else 'Never' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-speedometer2 text-warning me-2"></i>Risk Exposure Profile</h6>
+                <div class="text-center py-2">
+                    <div class="display-5 fw-bold {% if asset.risk_score >= 75 %}text-danger{% elif asset.risk_score >= 50 %}text-warning{% else %}text-success{% endif %}">
+                        {{ asset.risk_score }}<span class="fs-6 text-muted">/100</span>
+                    </div>
+                    <p class="text-muted small mb-2">Calculated Threat Surface Score</p>
+                    <div class="progress bg-dark mx-auto" style="height: 8px; max-width: 200px;">
+                        <div class="progress-bar {% if asset.risk_score >= 75 %}bg-danger{% elif asset.risk_score >= 50 %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ asset.risk_score }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-door-open text-info me-2"></i>Declared Open Ports</h6>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% for port in asset.open_ports.split(',') %}
+                    <span class="badge bg-dark border border-secondary text-info mono-text p-2">Port {{ port.strip() }}</span>
+                    {% endfor %}
+                </div>
+                <div id="livePortReconContainer" class="d-none">
+                    <h6 class="text-white small mb-1"><i class="bi bi-activity text-success me-1"></i>Live Recon Result</h6>
+                    <div id="livePortReconList" class="small mono-text text-dim"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Linked Vulnerabilities -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-bug text-danger"></i>
+                <h5 class="mb-0 text-white">Vulnerabilities Impacting this Asset</h5>
+            </div>
+            <a href="{{ url_for('vulnerabilities.create') }}" class="btn btn-sm btn-cyber-outline">
+                <i class="bi bi-plus-lg me-1"></i>Link CVE
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>CVE Identifier</th>
+                        <th>Title & Description</th>
+                        <th>Severity</th>
+                        <th>CVSS Score</th>
+                        <th>Status</th>
+                        <th>Mitre Tactic</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in vulnerabilities %}
+                    <tr>
+                        <td class="mono-text fw-bold text-danger">{{ v.cve_id }}</td>
+                        <td>
+                            <div class="fw-bold text-white">{{ v.title }}</div>
+                            <small class="text-muted">{{ v.description[:60] }}...</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if v.severity == 'Critical' %}badge-critical{% elif v.severity == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                                {{ v.severity }}
+                            </span>
+                        </td>
+                        <td class="mono-text fw-bold text-warning">{{ v.cvss_score }}</td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-white">{{ v.status }}</span>
+                        </td>
+                        <td class="text-muted small">{{ v.mitre_tactic }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('vulnerabilities.detail', vuln_id=v.id) }}" class="btn btn-sm btn-cyber-outline py-1 px-2">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-shield-check text-success fs-3 d-block mb-1"></i>
+                            No unresolved CVE vulnerabilities linked to this asset.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function runAssetPortScan(assetId) {
+    const container = document.getElementById('livePortReconContainer');
+    const list = document.getElementById('livePortReconList');
+    container.classList.remove('d-none');
+    list.innerHTML = '<span class="text-info"><i class="bi bi-arrow-repeat spin"></i> Probing network ports...</span>';
+
+    fetch(`/assets/${assetId}/port-scan`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                list.innerHTML = '';
+                data.ports.forEach(p => {
+                    const isOpen = p.status === 'Open';
+                    const item = document.createElement('div');
+                    item.className = 'd-flex justify-content-between py-1 border-bottom border-dark';
+                    item.innerHTML = `<span>Port ${p.port} (${p.service})</span> <span class="${isOpen ? 'text-danger fw-bold' : 'text-muted'}">${p.status}</span>`;
+                    list.appendChild(item);
+                });
+            }
+        })
+        .catch(err => {
+            list.innerHTML = '<span class="text-danger">Port scan failed: ' + err + '</span>';
+        });
+}
+</script>
+{% endblock %}

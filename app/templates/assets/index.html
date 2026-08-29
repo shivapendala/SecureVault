@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Inventory - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="mb-1 text-white"><i class="bi bi-hdd-network-fill text-primary me-2"></i>Security Asset Inventory</h2>
+            <p class="text-muted small mb-0">Unified attack surface visibility across Cloud VPCs, Kubernetes clusters, endpoints, and perimeter firewalls.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('assets.create') }}" class="btn btn-cyber-primary">
+                <i class="bi bi-plus-circle me-1"></i>Register New Asset
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="cyber-card p-3">
+        <form method="GET" action="{{ url_for('assets.index') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control cyber-input" placeholder="Search asset name, IP, FQDN...">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="type" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Asset Types</option>
+                    {% for t in asset_types %}
+                    <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="env" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Envs</option>
+                    {% for env in environments %}
+                    <option value="{{ env }}" {% if selected_env == env %}selected{% endif %}>{{ env }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-cyber-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+                <a href="{{ url_for('assets.index') }}" class="btn btn-cyber-outline"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Asset Table -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-cpu text-info"></i>
+                <h5 class="mb-0 text-white">Registered Infrastructure Nodes</h5>
+            </div>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary">{{ assets|length }} Nodes Tracked</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Asset Name & FQDN</th>
+                        <th>Type</th>
+                        <th>IP / Subnet</th>
+                        <th>Environment</th>
+                        <th>Risk Score</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in assets %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('assets.detail', asset_id=a.id) }}" class="fw-bold text-white text-decoration-none hover-cyan">
+                                {{ a.name }}
+                            </a>
+                            <div class="mono-text small text-dim">{{ a.fqdn or 'No DNS mapping' }}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-info">
+                                {{ a.asset_type }}
+                            </span>
+                        </td>
+                        <td class="mono-text text-muted">{{ a.ip_address or 'DHCP' }}</td>
+                        <td>
+                            <span class="badge {% if a.environment == 'Production' %}bg-danger bg-opacity-15 text-danger border border-danger{% elif a.environment == 'DMZ' %}bg-warning bg-opacity-15 text-warning border border-warning{% else %}bg-secondary text-white{% endif %}">
+                                {{ a.environment }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold {% if a.risk_score >= 75 %}text-danger{% elif a.risk_score >= 50 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ a.risk_score }}/100
+                                </span>
+                                <div class="progress flex-grow-1 bg-dark" style="height: 6px; width: 60px;">
+                                    <div class="progress-bar {% if a.risk_score >= 75 %}bg-danger{% elif a.risk_score >= 50 %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ a.risk_score }}%;"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if a.status == 'Active' %}bg-success bg-opacity-20 text-success border border-success{% elif a.status == 'Isolated' %}bg-danger bg-opacity-25 text-danger border border-danger{% else %}bg-secondary text-white{% endif %}">
+                                {{ a.status }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('assets.detail', asset_id=a.id) }}" class="btn btn-sm btn-cyber-outline py-1 px-2">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">No infrastructure assets registered.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

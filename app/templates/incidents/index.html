@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Incident Response - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="mb-1 text-white"><i class="bi bi-shield-slash-fill text-warning me-2"></i>SOC Incident Response Board</h2>
+            <p class="text-muted small mb-0">Active containment, IOC threat investigation, and MITRE ATT&CK adversarial telemetry.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('incidents.create') }}" class="btn btn-cyber-primary">
+                <i class="bi bi-exclamation-triangle me-1"></i>Escalate Incident Ticket
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="cyber-card p-3">
+        <form method="GET" action="{{ url_for('incidents.index') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control cyber-input" placeholder="Search ticket ID, title, threat actor...">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="severity" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Severities</option>
+                    {% for s in severities %}
+                    <option value="{{ s }}" {% if selected_sev == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="status" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for st in statuses %}
+                    <option value="{{ st }}" {% if selected_status == st %}selected{% endif %}>{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-cyber-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+                <a href="{{ url_for('incidents.index') }}" class="btn btn-cyber-outline"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Incidents Table -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-activity text-warning"></i>
+                <h5 class="mb-0 text-white">Active Threat Investigations</h5>
+            </div>
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">{{ incidents|length }} Open Tickets</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Ticket ID</th>
+                        <th>Incident Description</th>
+                        <th>Severity</th>
+                        <th>Threat Actor</th>
+                        <th>MITRE Technique</th>
+                        <th>Assignee</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inc in incidents %}
+                    <tr>
+                        <td class="mono-text fw-bold text-info">{{ inc.ticket_id }}</td>
+                        <td>
+                            <a href="{{ url_for('incidents.detail', incident_id=inc.id) }}" class="fw-bold text-white text-decoration-none hover-cyan">
+                                {{ inc.title }}
+                            </a>
+                            <div class="text-muted small">{{ inc.description[:60] }}...</div>
+                        </td>
+                        <td>
+                            <span class="badge {% if inc.severity == 'Critical' %}badge-critical{% elif inc.severity == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                                {{ inc.severity }}
+                            </span>
+                        </td>
+                        <td class="mono-text small text-dim">{{ inc.threat_actor }}</td>
+                        <td class="small text-muted">{{ inc.mitre_technique }}</td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-info">
+                                {{ inc.assignee.username if inc.assignee else 'Unassigned' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if inc.status == 'Investigating' %}bg-danger bg-opacity-20 text-danger border border-danger{% elif inc.status == 'Contained' %}bg-warning bg-opacity-20 text-warning border border-warning{% elif inc.status == 'Eradicated' or inc.status == 'Closed' %}bg-success bg-opacity-20 text-success border border-success{% else %}bg-secondary text-white{% endif %}">
+                                {{ inc.status }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('incidents.detail', incident_id=inc.id) }}" class="btn btn-sm btn-cyber-outline py-1 px-2">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">No security incidents matching current filter parameters.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

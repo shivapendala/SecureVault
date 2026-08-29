@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Incident Room - {{ incident.ticket_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('incidents.index') }}" class="btn btn-sm btn-cyber-outline py-0 px-2"><i class="bi bi-arrow-left"></i></a>
+                <span class="mono-text fs-4 fw-bold text-info">{{ incident.ticket_id }}</span>
+                <span class="badge {% if incident.severity == 'Critical' %}badge-critical{% elif incident.severity == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                    {{ incident.severity }} Severity
+                </span>
+                <span class="badge bg-dark border border-secondary text-white">{{ incident.status }}</span>
+            </div>
+            <h3 class="text-white mb-0">{{ incident.title }}</h3>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <!-- Update Status Dropdown / Form -->
+            <form method="POST" action="{{ url_for('incidents.update_status', incident_id=incident.id) }}" class="d-flex align-items-center gap-2">
+                <select name="status" class="form-select form-select-sm cyber-input" onchange="this.form.submit()">
+                    <option value="Triage" {% if incident.status == 'Triage' %}selected{% endif %}>Stage: Triage</option>
+                    <option value="Investigating" {% if incident.status == 'Investigating' %}selected{% endif %}>Stage: Investigating</option>
+                    <option value="Contained" {% if incident.status == 'Contained' %}selected{% endif %}>Stage: Contained</option>
+                    <option value="Eradicated" {% if incident.status == 'Eradicated' %}selected{% endif %}>Stage: Eradicated</option>
+                    <option value="Closed" {% if incident.status == 'Closed' %}selected{% endif %}>Stage: Closed</option>
+                </select>
+            </form>
+            {% if current_user_role == 'Admin' %}
+            <form method="POST" action="{{ url_for('incidents.delete', incident_id=incident.id) }}" onsubmit="return confirm('Permanently remove this incident ticket?');">
+                <button type="submit" class="btn btn-cyber-outline text-danger">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Metadata Cards -->
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-shield-shaded text-info me-2"></i>Investigation Lead</h6>
+                <div class="d-flex flex-column gap-2 small">
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Assigned Investigator:</span>
+                        <span class="text-white fw-bold">{{ incident.assignee.full_name or incident.assignee.username if incident.assignee else 'Unassigned' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Detected On:</span>
+                        <span class="mono-text text-white">{{ incident.detected_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Resolved On:</span>
+                        <span class="mono-text text-white">{{ incident.resolved_at.strftime('%Y-%m-%d %H:%M') if incident.resolved_at else 'Active' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-crosshair text-danger me-2"></i>Threat Intelligence</h6>
+                <div class="d-flex flex-column gap-2 small">
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Threat Group:</span>
+                        <span class="mono-text text-danger">{{ incident.threat_actor }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">ATT&CK Technique:</span>
+                        <span class="mono-text text-info">{{ incident.mitre_technique }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-list-check text-success me-2"></i>Containment SLA</h6>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-dark border border-success d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                        <i class="bi bi-shield-check text-success fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-white">{{ incident.status }}</div>
+                        <small class="text-muted">SOC Containment Protocol Active</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description and IOCs -->
+    <div class="row g-3">
+        <div class="col-12 col-lg-7">
+            <div class="cyber-card p-4 h-100">
+                <h5 class="text-white mb-3"><i class="bi bi-file-earmark-text text-info me-2"></i>Incident Analysis & Telemetry</h5>
+                <p class="text-muted" style="line-height: 1.6;">{{ incident.description }}</p>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-5">
+            <div class="cyber-card p-4 h-100 border-warning border-opacity-25">
+                <h5 class="text-white mb-3"><i class="bi bi-fingerprint text-warning me-2"></i>Extracted IOCs (Indicators of Compromise)</h5>
+                <div class="terminal-box">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                        <span class="text-muted ms-2 small">ioc-telemetry.log</span>
+                    </div>
+                    <pre class="mb-0 text-warning" style="white-space: pre-wrap;">{{ incident.iocs or 'No external IP/hash IOCs attached to this ticket.' }}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

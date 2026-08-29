@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Credential Vault - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="mb-1 text-white"><i class="bi bi-key-fill text-info me-2"></i>Zero-Trust Credential Vault</h2>
+            <p class="text-muted small mb-0">Hardware-grade symmetric encryption (Fernet / AES-256) with immutable decryption audit logs.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('vault.create') }}" class="btn btn-cyber-primary">
+                <i class="bi bi-plus-circle me-1"></i>Store New Credential
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Search Bar -->
+    <div class="cyber-card p-3">
+        <form method="GET" action="{{ url_for('vault.index') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control cyber-input" placeholder="Search secret title, description...">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="category" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="env" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Environments</option>
+                    {% for env in environments %}
+                    <option value="{{ env }}" {% if selected_env == env %}selected{% endif %}>{{ env }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-cyber-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+                <a href="{{ url_for('vault.index') }}" class="btn btn-cyber-outline"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Secrets Grid / Table -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-lock text-info"></i>
+                <h5 class="mb-0 text-white">Stored Secrets & Access Keys</h5>
+            </div>
+            <span class="badge bg-info bg-opacity-10 text-info border border-info">{{ secrets|length }} Items Active</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Credential Title</th>
+                        <th>Category</th>
+                        <th>Environment</th>
+                        <th>Masked Secret Value</th>
+                        <th>Risk Tier</th>
+                        <th>Rotation Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for secret in secrets %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-white">{{ secret.title }}</div>
+                            <small class="text-muted">{{ secret.description or 'No notes provided' }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-info">
+                                <i class="bi bi-tag me-1"></i>{{ secret.category }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if secret.environment == 'Production' %}bg-danger bg-opacity-15 text-danger border border-danger{% elif secret.environment == 'Staging' %}bg-warning bg-opacity-15 text-warning border border-warning{% else %}bg-secondary text-white{% endif %}">
+                                {{ secret.environment }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="mono-text text-dim">{{ secret.get_masked() }}</span>
+                                <button class="btn btn-sm btn-cyber-outline py-0 px-2" title="Decrypt and Reveal Secret" onclick="revealSecretModal('{{ secret.id }}', '{{ secret.title|escape }}')">
+                                    <i class="bi bi-eye text-info"></i> Reveal
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if secret.risk_level == 'Critical' %}badge-critical{% elif secret.risk_level == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                                {{ secret.risk_level }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if secret.expires_at %}
+                            <small class="text-muted"><i class="bi bi-clock me-1"></i>Exp: {{ secret.expires_at.strftime('%Y-%m-%d') }}</small>
+                            {% else %}
+                            <small class="text-dim">No expiry set</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <form method="POST" action="{{ url_for('vault.rotate_secret', secret_id=secret.id) }}" onsubmit="return confirm('Rotate and generate a fresh key for this secret?');">
+                                    <button type="submit" class="btn btn-sm btn-cyber-outline py-1 px-2 text-warning" title="Rotate Key">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                </form>
+                                {% if current_user_role == 'Admin' %}
+                                <form method="POST" action="{{ url_for('vault.delete', secret_id=secret.id) }}" onsubmit="return confirm('Permanently destroy this secret from vault?');">
+                                    <button type="submit" class="btn btn-sm btn-cyber-outline py-1 px-2 text-danger" title="Purge Secret">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 text-dim"></i>
+                            No vault secrets found matching filters.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Decrypt & Reveal Modal -->
+<div class="modal fade" id="secretRevealModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cyber-card border-info">
+            <div class="modal-header border-bottom border-secondary border-opacity-25">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-lock-fill text-info fs-5"></i>
+                    <h5 class="modal-title text-white" id="revealModalTitle">Decrypt Secret</h5>
+                </div>
+                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning" id="revealTimerBadge">Auto-masking in 15s</span>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2"><i class="bi bi-info-circle text-info me-1"></i>This decryption event has been logged to the immutable compliance audit trail.</p>
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-semibold">Decrypted Payload (AES-256 CBC / Fernet)</label>
+                    <textarea id="revealedSecretValue" class="form-control cyber-input mono-text text-info" rows="4" readonly></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary border-opacity-25">
+                <button type="button" class="btn btn-cyber-outline" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-cyber-primary" id="revealCopyBtn">
+                    <i class="bi bi-clipboard me-1"></i>Copy Secret
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/vault.js') }}"></script>
+{% endblock %}

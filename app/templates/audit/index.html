@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail & Compliance - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="mb-1 text-white"><i class="bi bi-journal-text text-info me-2"></i>Immutable Security Audit Trail</h2>
+            <p class="text-muted small mb-0">Append-only compliance telemetry for SOC 2 Type II, ISO 27001, and NIST 800-53 zero-trust auditing.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('audit.export_csv') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-download me-1"></i>Export Compliance CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="cyber-card p-3">
+        <form method="GET" action="{{ url_for('audit.index') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control cyber-input" placeholder="Search actor, action, IP, details...">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="status" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for s in statuses %}
+                    <option value="{{ s }}" {% if selected_status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <input type="text" name="action" value="{{ selected_action or '' }}" class="form-control cyber-input" placeholder="Filter action...">
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-cyber-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+                <a href="{{ url_for('audit.index') }}" class="btn btn-cyber-outline"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Audit Table -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-success"></i>
+                <h5 class="mb-0 text-white">Cryptographically Verified Access Logs</h5>
+            </div>
+            <span class="badge bg-dark border border-secondary text-dim">{{ logs|length }} Events Logged</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Operator / Actor</th>
+                        <th>Security Action</th>
+                        <th>Target Model</th>
+                        <th>Status</th>
+                        <th>Client IP & Network</th>
+                        <th>Event Details & Context</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="mono-text text-dim small">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            <div class="fw-bold text-white">{{ log.user.username if log.user else 'System Engine' }}</div>
+                            <small class="text-dim">{{ log.user.role if log.user else 'Daemon' }}</small>
+                        </td>
+                        <td>
+                            <span class="mono-text badge bg-dark border border-secondary text-info">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-muted">
+                                {{ log.target_type or 'Platform' }}{% if log.target_id %}: #{{ log.target_id }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if log.status == 'SUCCESS' %}bg-success bg-opacity-25 text-success border border-success{% elif log.status == 'WARNING' %}bg-warning bg-opacity-25 text-warning border border-warning{% elif log.status == 'DENIED' %}bg-danger bg-opacity-25 text-danger border border-danger{% else %}bg-secondary text-white{% endif %}">
+                                {{ log.status }}
+                            </span>
+                        </td>
+                        <td class="mono-text text-dim small">{{ log.ip_address }}</td>
+                        <td class="text-muted small">{{ log.details or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">No audit logs matching query.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

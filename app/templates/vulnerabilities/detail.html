@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}CVE Details - {{ vuln.cve_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('vulnerabilities.index') }}" class="btn btn-sm btn-cyber-outline py-0 px-2"><i class="bi bi-arrow-left"></i></a>
+                <span class="mono-text fs-4 fw-bold text-danger">{{ vuln.cve_id }}</span>
+                <span class="badge {% if vuln.severity == 'Critical' %}badge-critical{% elif vuln.severity == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                    {{ vuln.severity }}
+                </span>
+                <span class="badge bg-dark border border-secondary text-white">{{ vuln.status }}</span>
+            </div>
+            <h3 class="text-white mb-0">{{ vuln.title }}</h3>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <!-- Update Status Dropdown / Form -->
+            <form method="POST" action="{{ url_for('vulnerabilities.update_status', vuln_id=vuln.id) }}" class="d-flex align-items-center gap-2">
+                <select name="status" class="form-select form-select-sm cyber-input" onchange="this.form.submit()">
+                    <option value="Open" {% if vuln.status == 'Open' %}selected{% endif %}>Set Status: Open</option>
+                    <option value="In Progress" {% if vuln.status == 'In Progress' %}selected{% endif %}>Set Status: In Progress</option>
+                    <option value="Mitigated" {% if vuln.status == 'Mitigated' %}selected{% endif %}>Set Status: Mitigated</option>
+                    <option value="Resolved" {% if vuln.status == 'Resolved' %}selected{% endif %}>Set Status: Resolved</option>
+                </select>
+            </form>
+            {% if current_user_role == 'Admin' %}
+            <form method="POST" action="{{ url_for('vulnerabilities.delete', vuln_id=vuln.id) }}" onsubmit="return confirm('Permanently delete this vulnerability record?');">
+                <button type="submit" class="btn btn-cyber-outline text-danger">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Metadata Grid -->
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-speedometer2 text-danger me-2"></i>CVSS v3.1 Scoring</h6>
+                <div class="text-center py-2">
+                    <div class="display-5 fw-bold {% if vuln.cvss_score >= 9.0 %}text-danger{% elif vuln.cvss_score >= 7.0 %}text-warning{% else %}text-info{% endif %}">
+                        {{ vuln.cvss_score }}<span class="fs-6 text-muted">/10.0</span>
+                    </div>
+                    <div class="mono-text small text-dim mt-2">{{ vuln.cvss_vector }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-bullseye text-warning me-2"></i>Target & Threat Scope</h6>
+                <div class="d-flex flex-column gap-2 small">
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Target Asset:</span>
+                        <span class="text-white fw-semibold">
+                            {% if vuln.asset %}
+                            <a href="{{ url_for('assets.detail', asset_id=vuln.asset.id) }}" class="text-info text-decoration-none">{{ vuln.asset.name }}</a>
+                            {% else %}
+                            Global Infrastructure Scope
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">MITRE ATT&CK:</span>
+                        <span class="mono-text text-white">{{ vuln.mitre_tactic }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Exploit Status:</span>
+                        {% if vuln.exploit_available %}
+                        <span class="text-danger fw-bold"><i class="bi bi-fire me-1"></i>Public Exploit Available</span>
+                        {% else %}
+                        <span class="text-muted">No Public PoC Detected</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Discovered:</span>
+                        <span class="mono-text text-dim">{{ vuln.discovered_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="cyber-card p-3 h-100">
+                <h6 class="text-white mb-3"><i class="bi bi-check-circle text-success me-2"></i>Remediation Lifecycle</h6>
+                <div class="d-flex flex-column gap-2 small">
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Current Stage:</span>
+                        <span class="badge bg-dark border border-secondary text-white">{{ vuln.status }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                        <span class="text-muted">Resolved On:</span>
+                        <span class="mono-text text-white">{{ vuln.resolved_at.strftime('%Y-%m-%d %H:%M') if vuln.resolved_at else 'In Remediation' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Analysis & Remediation -->
+    <div class="row g-3">
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card p-4 h-100">
+                <h5 class="text-white mb-3"><i class="bi bi-file-text text-info me-2"></i>Technical Description & Impact</h5>
+                <p class="text-muted" style="line-height: 1.6;">{{ vuln.description }}</p>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card p-4 h-100 border-success border-opacity-25">
+                <h5 class="text-white mb-3"><i class="bi bi-wrench-adjustable text-success me-2"></i>Prescribed Patch & Remediation Guidance</h5>
+                <div class="terminal-box mb-3">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                        <span class="text-muted ms-2 small">remediation-playbook.sh</span>
+                    </div>
+                    <pre class="mb-0 text-white" style="white-space: pre-wrap;">{{ vuln.remediation_guidance or 'Apply latest vendor security patches and restrict ingress network access.' }}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

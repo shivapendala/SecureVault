@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Cyber Security Scanners - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="mb-1 text-white"><i class="bi bi-radar text-success me-2"></i>Multi-Vector Security Scanners</h2>
+            <p class="text-muted small mb-0">Live automated security auditing for HTTP headers, SSL/TLS certificates, network ports, and password entropy.</p>
+        </div>
+    </div>
+
+    <!-- Scanner Tabs -->
+    <div class="cyber-card p-3">
+        <ul class="nav nav-pills gap-2 mb-3" id="scannerTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active btn-cyber-outline" id="header-scan-tab" data-bs-toggle="pill" data-bs-target="#headerScanPane" type="button" role="tab">
+                    <i class="bi bi-shield-check me-2"></i>Web Headers & SSL Inspector
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link btn-cyber-outline" id="port-recon-tab" data-bs-toggle="pill" data-bs-target="#portReconPane" type="button" role="tab">
+                    <i class="bi bi-diagram-3 me-2"></i>Target Port Recon
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link btn-cyber-outline" id="entropy-tab" data-bs-toggle="pill" data-bs-target="#entropyPane" type="button" role="tab">
+                    <i class="bi bi-key-fill me-2"></i>Password Entropy & NIST Analyzer
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="scannerTabContent">
+            <!-- TAB 1: WEB HEADERS & SSL -->
+            <div class="tab-pane fade show active" id="headerScanPane" role="tabpanel">
+                <form id="headerScanForm" class="row g-2 mb-4">
+                    <div class="col-12 col-md-9">
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-globe"></i></span>
+                            <input type="text" id="targetUrlInput" class="form-control cyber-input" placeholder="https://github.com or https://example.com" value="https://github.com" required>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <button type="submit" id="scanSubmitBtn" class="btn btn-cyber-primary w-100">
+                            <i class="bi bi-search me-1"></i>Audit Security
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Loading state -->
+                <div id="scanLoadingState" class="text-center py-5 d-none">
+                    <div class="spinner-border text-info mb-2" role="status"></div>
+                    <div class="mono-text text-info">Connecting to target host & evaluating cryptographic certificates...</div>
+                </div>
+
+                <!-- Results Output -->
+                <div id="headerScanResults" class="d-none">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="cyber-card p-3 text-center bg-dark">
+                                <div class="stat-label">Security Grade</div>
+                                <div class="display-4 fw-bold text-info my-1" id="resGradeBadge">A+</div>
+                                <div class="text-muted small" id="resScoreVal">95/100 Security Score</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <div class="cyber-card p-3 bg-dark h-100">
+                                <div class="stat-label mb-2">Target Host & TLS Inspection</div>
+                                <div class="fw-bold text-white mb-2" id="resTargetDomain">-</div>
+                                <div id="resSslDetails"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
+                            <div class="cyber-card p-3">
+                                <h6 class="text-white mb-2"><i class="bi bi-check-circle text-success me-2"></i>Active Security Headers</h6>
+                                <ul class="list-group list-group-flush" id="resPassedHeaders"></ul>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div class="cyber-card p-3">
+                                <h6 class="text-white mb-2"><i class="bi bi-exclamation-triangle text-warning me-2"></i>Missing / Weak Headers</h6>
+                                <ul class="list-group list-group-flush" id="resMissingHeaders"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: PORT RECON -->
+            <div class="tab-pane fade" id="portReconPane" role="tabpanel">
+                <form id="portScanForm" class="row g-2 mb-4">
+                    <div class="col-12 col-md-9">
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-hdd-network"></i></span>
+                            <input type="text" id="targetHostInput" class="form-control cyber-input mono-text" placeholder="127.0.0.1 or scanme.nmap.org" value="127.0.0.1" required>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <button type="submit" id="portScanBtn" class="btn btn-cyber-primary w-100">
+                            <i class="bi bi-crosshair me-1"></i>Probe Ports
+                        </button>
+                    </div>
+                </form>
+
+                <div id="portScanLoading" class="text-center py-4 d-none">
+                    <div class="spinner-border text-info mb-2"></div>
+                    <div class="mono-text text-info">Probing TCP ports & measuring response latency...</div>
+                </div>
+
+                <div id="portScanResults" class="cyber-card d-none">
+                    <div class="table-responsive">
+                        <table class="cyber-table">
+                            <thead>
+                                <tr>
+                                    <th>Port</th>
+                                    <th>Service</th>
+                                    <th>Status</th>
+                                    <th>Description</th>
+                                    <th>Latency</th>
+                                </tr>
+                            </thead>
+                            <tbody id="portResultsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: PASSWORD ENTROPY & BREACH ANALYZER -->
+            <div class="tab-pane fade" id="entropyPane" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <div class="cyber-card p-4 h-100">
+                            <h5 class="text-white mb-3"><i class="bi bi-shield-lock text-info me-2"></i>Live Entropy Evaluator</h5>
+                            <label class="form-label text-muted small fw-semibold">Test Passphrase or API Secret</label>
+                            <input type="text" id="entropyTestInput" class="form-control cyber-input mono-text mb-3" placeholder="Type or paste password to evaluate...">
+
+                            <div class="mb-2 d-flex justify-content-between">
+                                <span class="text-muted small">Shannon Entropy:</span>
+                                <span class="mono-text text-info fw-bold" id="entropyBitsVal">0 bits</span>
+                            </div>
+                            <div class="progress bg-dark mb-3" style="height: 10px;">
+                                <div class="progress-bar" id="entropyProgressBar" style="width: 0%;"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="text-muted small">NIST Resistance Rating:</span>
+                                <span class="badge bg-dark border border-secondary text-white ms-2" id="entropyStrengthLabel">Waiting for input...</span>
+                            </div>
+
+                            <div class="card-header-cyber p-0 mb-2 mt-4">
+                                <h6 class="text-white mb-0">NIST SP 800-63B Recommendations</h6>
+                            </div>
+                            <ul class="list-unstyled" id="entropyFeedbackList">
+                                <li class="text-muted small">• Type at least 12 characters combining upper, lower, numbers and symbols.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <div class="cyber-card p-4 h-100">
+                            <h5 class="text-white mb-3"><i class="bi bi-cpu text-info me-2"></i>Entropy Scale Guidelines</h5>
+                            <div class="table-responsive">
+                                <table class="cyber-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Entropy (Bits)</th>
+                                            <th>Strength</th>
+                                            <th>Offline Cracking Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="mono-text text-danger">&lt; 40 bits</td>
+                                            <td><span class="badge badge-critical">Critical</span></td>
+                                            <td class="text-muted">Instant / Seconds</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="mono-text text-warning">40 - 59 bits</td>
+                                            <td><span class="badge badge-high">Weak</span></td>
+                                            <td class="text-muted">Hours to Days</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="mono-text text-info">60 - 79 bits</td>
+                                            <td><span class="badge badge-medium">Strong</span></td>
+                                            <td class="text-muted">Centuries</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="mono-text text-success">&ge; 80 bits</td>
+                                            <td><span class="badge badge-low">Enterprise</span></td>
+                                            <td class="text-success">Quantum / Trillions of Years</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scanner Reports History -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-clock-history text-info"></i>
+                <h5 class="mb-0 text-white">Recent Security Scan Reports</h5>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Scan Type</th>
+                        <th>Target Host</th>
+                        <th>Result Grade / Score</th>
+                        <th>Summary</th>
+                        <th>Timestamp (UTC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reports %}
+                    <tr>
+                        <td><span class="badge bg-dark border border-secondary text-info">{{ r.scan_type }}</span></td>
+                        <td class="mono-text fw-bold text-white">{{ r.target }}</td>
+                        <td>
+                            <span class="badge {% if r.grade in ['A+', 'A', 'PASS'] %}badge-low{% elif r.grade in ['B', 'C', 'WARN'] %}badge-medium{% else %}badge-critical{% endif %}">
+                                Grade {{ r.grade }} ({{ r.score }}/100)
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ r.summary }}</td>
+                        <td class="mono-text text-dim">{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No historical scans recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/scanners.js') }}"></script>
+{% endblock %}

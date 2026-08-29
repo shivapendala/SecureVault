@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Vulnerability Management - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="mb-1 text-white"><i class="bi bi-bug-fill text-danger me-2"></i>Vulnerability & CVE Matrix</h2>
+            <p class="text-muted small mb-0">CVSS v3.1 scoring, MITRE ATT&CK tactical mapping, and remediation tracking lifecycle.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('vulnerabilities.create') }}" class="btn btn-cyber-primary">
+                <i class="bi bi-plus-circle me-1"></i>Log New CVE
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="cyber-card p-3">
+        <form method="GET" action="{{ url_for('vulnerabilities.index') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control cyber-input" placeholder="Search CVE ID, title, description...">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="severity" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Severities</option>
+                    {% for s in severities %}
+                    <option value="{{ s }}" {% if selected_sev == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="status" class="form-select cyber-input" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for st in statuses %}
+                    <option value="{{ st }}" {% if selected_status == st %}selected{% endif %}>{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-cyber-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+                <a href="{{ url_for('vulnerabilities.index') }}" class="btn btn-cyber-outline"><i class="bi bi-x-circle"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Vulnerability Grid / Table -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-slash text-danger"></i>
+                <h5 class="mb-0 text-white">Tracked Security Advisories</h5>
+            </div>
+            <span class="badge badge-critical">{{ vulnerabilities|length }} Advisories</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>CVE Identifier</th>
+                        <th>Vulnerability Title</th>
+                        <th>CVSS Score</th>
+                        <th>Severity</th>
+                        <th>Affected Target Asset</th>
+                        <th>MITRE Tactic</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in vulnerabilities %}
+                    <tr>
+                        <td class="mono-text fw-bold text-danger">{{ v.cve_id }}</td>
+                        <td>
+                            <a href="{{ url_for('vulnerabilities.detail', vuln_id=v.id) }}" class="fw-bold text-white text-decoration-none hover-cyan">
+                                {{ v.title }}
+                            </a>
+                            <div class="text-muted small">{{ v.description[:75] }}{% if v.description|length > 75 %}...{% endif %}</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="mono-text fw-bold {% if v.cvss_score >= 9.0 %}text-danger{% elif v.cvss_score >= 7.0 %}text-warning{% else %}text-info{% endif %}">
+                                    {{ v.cvss_score }}
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if v.severity == 'Critical' %}badge-critical{% elif v.severity == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                                {{ v.severity }}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ v.asset.name if v.asset else 'Global Scope' }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-dark border border-secondary text-dim mono-text">{{ v.mitre_tactic }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {% if v.status == 'Resolved' %}bg-success bg-opacity-20 text-success border border-success{% elif v.status == 'Mitigated' %}bg-info bg-opacity-20 text-info border border-info{% elif v.status == 'In Progress' %}bg-warning bg-opacity-20 text-warning border border-warning{% else %}bg-danger bg-opacity-20 text-danger border border-danger{% endif %}">
+                                {{ v.status }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('vulnerabilities.detail', vuln_id=v.id) }}" class="btn btn-sm btn-cyber-outline py-1 px-2">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">No vulnerabilities found matching criteria.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

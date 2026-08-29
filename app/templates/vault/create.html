@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Store New Secret - SecureVault{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="cyber-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom border-secondary border-opacity-25">
+                <div>
+                    <h3 class="text-white mb-1"><i class="bi bi-shield-plus text-info me-2"></i>Store Encrypted Secret</h3>
+                    <p class="text-muted small mb-0">Payload will be encrypted client-side and saved into MySQL via AES-256 Fernet.</p>
+                </div>
+                <a href="{{ url_for('vault.index') }}" class="btn btn-sm btn-cyber-outline">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Vault
+                </a>
+            </div>
+
+            <form method="POST" action="{{ url_for('vault.create') }}">
+                <div class="row g-3">
+                    <div class="col-12 col-md-8">
+                        <label class="form-label text-muted small fw-semibold">Secret Title / Identifier *</label>
+                        <input type="text" name="title" class="form-control cyber-input" placeholder="e.g. AWS Production Root Secret Key" required autofocus>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted small fw-semibold">Secret Category *</label>
+                        <select name="category" class="form-select cyber-input" required>
+                            <option value="API Key">API Key</option>
+                            <option value="Database">Database Password</option>
+                            <option value="SSH Key">SSH Private Key</option>
+                            <option value="Cloud Secret">Cloud IAM Secret</option>
+                            <option value="SSL Certificate">SSL / TLS Private Key</option>
+                            <option value="Token">OAuth / JWT Token</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label text-muted small fw-semibold mb-0">Plain Secret Content *</label>
+                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 small" data-bs-toggle="modal" data-bs-target="#pwdGenModal" onclick="generatePasswordModal()">
+                                <i class="bi bi-magic me-1"></i>Password Generator
+                            </button>
+                        </div>
+                        <textarea name="secret_value" id="secret_value" class="form-control cyber-input mono-text" rows="4" placeholder="Paste key, certificate, or password to be encrypted..." required></textarea>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted small fw-semibold">Environment</label>
+                        <select name="environment" class="form-select cyber-input">
+                            <option value="Production" selected>Production (Restricted)</option>
+                            <option value="Staging">Staging</option>
+                            <option value="Development">Development</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted small fw-semibold">Risk Level</label>
+                        <select name="risk_level" class="form-select cyber-input">
+                            <option value="Critical">Critical</option>
+                            <option value="High" selected>High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted small fw-semibold">Key Rotation Period (Days)</label>
+                        <input type="number" name="rotation_days" class="form-control cyber-input" value="90" min="7" max="365">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label text-muted small fw-semibold">Notes / Description (Unencrypted metadata)</label>
+                        <textarea name="description" class="form-control cyber-input" rows="2" placeholder="Owner, service dependencies, or deployment instructions..."></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top border-secondary border-opacity-25 d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('vault.index') }}" class="btn btn-cyber-outline">Cancel</a>
+                    <button type="submit" class="btn btn-cyber-primary">
+                        <i class="bi bi-lock-fill me-1"></i>Encrypt & Store in Vault
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Password Generator Modal -->
+<div class="modal fade" id="pwdGenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cyber-card border-info">
+            <div class="modal-header border-bottom border-secondary border-opacity-25">
+                <h5 class="modal-title text-white"><i class="bi bi-shield-shaded text-info me-2"></i>Cryptographic Key Generator</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-semibold">Key Length: <span id="pwdLengthVal">24</span></label>
+                    <input type="range" class="form-range" id="pwdLength" min="12" max="48" value="24" oninput="document.getElementById('pwdLengthVal').textContent=this.value; generatePasswordModal();">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-semibold">Generated Key</label>
+                    <div class="input-group">
+                        <input type="text" id="generatedPasswordOutput" class="form-control cyber-input mono-text text-info" readonly>
+                        <button class="btn btn-outline-info" type="button" onclick="generatePasswordModal()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-muted small">Entropy: </span>
+                    <span class="badge bg-success bg-opacity-20 text-success border border-success" id="entropyBadge">128 bits (Enterprise)</span>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary border-opacity-25">
+                <button type="button" class="btn btn-cyber-outline" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-cyber-primary" onclick="applyGeneratedPassword()">
+                    <i class="bi bi-check2-circle me-1"></i>Use This Key
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/vault.js') }}"></script>
+{% endblock %}

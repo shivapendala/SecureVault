@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}SOC Command Dashboard - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Top Dashboard Header & Threat Level Banner -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="mb-1 text-white"><i class="bi bi-shield-shaded text-info me-2"></i>SOC Operations Command</h2>
+            <p class="text-muted small mb-0">Global threat telemetry, credential zero-trust perimeter, and incident response stream.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('scanners.index') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-radar me-1"></i>Launch Scanner
+            </a>
+            <a href="{{ url_for('vault.create') }}" class="btn btn-cyber-primary">
+                <i class="bi bi-plus-lg me-1"></i>Store New Secret
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 Key Stat Cards -->
+    <div class="row g-3">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="metric-stat-card cyber-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Security Posture Score</div>
+                        <div class="stat-value text-{{ posture_color }}">{{ security_score }}<small class="fs-6 text-muted">/100</small></div>
+                        <span class="badge bg-{{ posture_color }} bg-opacity-20 text-{{ posture_color }} border border-{{ posture_color }}">
+                            {{ posture_status }}
+                        </span>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-cyan">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="metric-stat-card cyber-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Active Incidents</div>
+                        <div class="stat-value text-danger">{{ active_incidents }}</div>
+                        <span class="badge badge-critical">{{ critical_incidents }} Critical Triage</span>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-crimson">
+                        <i class="bi bi-shield-slash"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="metric-stat-card cyber-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Open CVE Vulnerabilities</div>
+                        <div class="stat-value text-warning">{{ open_vulns }}</div>
+                        <span class="badge badge-high">{{ critical_vulns }} Critical Severity</span>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-amber">
+                        <i class="bi bi-bug"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="metric-stat-card cyber-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-label">Encrypted Vault Secrets</div>
+                        <div class="stat-value text-info">{{ total_secrets }}</div>
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info">AES-256 GCM Protected</span>
+                    </div>
+                    <div class="stat-icon-wrapper stat-icon-emerald">
+                        <i class="bi bi-safe2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3">
+        <div class="col-12 col-lg-5">
+            <div class="cyber-card h-100 p-3">
+                <div class="card-header-cyber mb-2">
+                    <h5 class="mb-0 text-white"><i class="bi bi-pie-chart text-info me-2"></i>Vulnerability Severity Radar</h5>
+                    <span class="badge bg-dark border border-secondary text-dim">CVSS v3.1</span>
+                </div>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="vulnDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-7">
+            <div class="cyber-card h-100 p-3">
+                <div class="card-header-cyber mb-2">
+                    <h5 class="mb-0 text-white"><i class="bi bi-bar-chart-line text-info me-2"></i>Protected Secrets Distribution</h5>
+                    <a href="{{ url_for('vault.index') }}" class="btn btn-sm btn-cyber-outline">View Vault</a>
+                </div>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="incidentTimelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Threat Incidents & Top Vulnerabilities Tables -->
+    <div class="row g-3">
+        <!-- Incidents -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card h-100">
+                <div class="card-header-cyber">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-octagon text-danger"></i>
+                        <h5 class="mb-0 text-white">Active SOC Incident Tickets</h5>
+                    </div>
+                    <a href="{{ url_for('incidents.index') }}" class="btn btn-sm btn-cyber-outline">All Incidents</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="cyber-table">
+                        <thead>
+                            <tr>
+                                <th>Ticket</th>
+                                <th>Threat / Title</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inc in recent_incidents %}
+                            <tr>
+                                <td class="mono-text fw-bold text-info">{{ inc.ticket_id }}</td>
+                                <td>
+                                    <div class="fw-semibold text-white">{{ inc.title }}</div>
+                                    <small class="text-dim mono-text">{{ inc.threat_actor }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if inc.severity == 'Critical' %}badge-critical{% elif inc.severity == 'High' %}badge-high{% else %}badge-medium{% endif %}">
+                                        {{ inc.severity }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-dark border border-secondary text-muted">{{ inc.status }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('incidents.detail', incident_id=inc.id) }}" class="btn btn-sm btn-cyber-outline py-1 px-2">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No active incident alerts detected.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- High Priority Vulnerabilities -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card h-100">
+                <div class="card-header-cyber">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-exclamation text-warning"></i>
+                        <h5 class="mb-0 text-white">Critical CVE Vulnerabilities</h5>
+                    </div>
+                    <a href="{{ url_for('vulnerabilities.index') }}" class="btn btn-sm btn-cyber-outline">CVE Matrix</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="cyber-table">
+                        <thead>
+                            <tr>
+                                <th>CVE ID</th>
+                                <th>Vulnerability</th>
+                                <th>CVSS</th>
+                                <th>Target Asset</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vuln in top_vulns %}
+                            <tr>
+                                <td class="mono-text fw-bold text-danger">{{ vuln.cve_id }}</td>
+                                <td>
+                                    <div class="fw-semibold text-white">{{ vuln.title[:38] }}{% if vuln.title|length > 38 %}...{% endif %}</div>
+                                    <small class="text-muted">{{ vuln.mitre_tactic }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if vuln.cvss_score >= 9.0 %}badge-critical{% elif vuln.cvss_score >= 7.0 %}badge-high{% else %}badge-medium{% endif %}">
+                                        {{ vuln.cvss_score }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ vuln.asset.name if vuln.asset else 'Global Cluster' }}</small>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('vulnerabilities.detail', vuln_id=vuln.id) }}" class="btn btn-sm btn-cyber-outline py-1 px-2">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">All known vulnerabilities mitigated!</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Threat Feed & Audit Stream -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <div class="pulse-dot"></div>
+                <h5 class="mb-0 text-white">Live Zero-Trust Security Audit Stream</h5>
+            </div>
+            <a href="{{ url_for('audit.index') }}" class="btn btn-sm btn-cyber-outline">View Full Trail</a>
+        </div>
+        <div class="table-responsive">
+            <table class="cyber-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Operator</th>
+                        <th>Security Action</th>
+                        <th>Target</th>
+                        <th>Status</th>
+                        <th>IP Address</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td class="mono-text text-dim">{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                        <td class="fw-semibold text-white">{{ log.user.username if log.user else 'System Engine' }}</td>
+                        <td><span class="mono-text badge bg-dark border border-secondary text-info">{{ log.action }}</span></td>
+                        <td class="mono-text text-muted">{{ log.target_type or 'Platform' }}</td>
+                        <td>
+                            <span class="badge {% if log.status == 'SUCCESS' %}bg-success bg-opacity-25 text-success border border-success{% elif log.status == 'WARNING' %}bg-warning bg-opacity-25 text-warning border border-warning{% else %}bg-danger bg-opacity-25 text-danger border border-danger{% endif %}">
+                                {{ log.status }}
+                            </span>
+                        </td>
+                        <td class="mono-text text-dim">{{ log.ip_address }}</td>
+                        <td class="text-muted small">{{ log.details or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}
