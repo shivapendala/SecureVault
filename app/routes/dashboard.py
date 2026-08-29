@@ -129,10 +129,22 @@ def user_dashboard():
         score_label = "NEEDS ATTENTION"
         score_badge = "warning"
 
-    # 2. Recent Login Activity
+    # 2. Login Telemetry & Activity Monitoring
     recent_logins = LoginAttempt.query.filter(
-        (LoginAttempt.user_id == user.id) | (LoginAttempt.username_attempted == user.username)
-    ).order_by(LoginAttempt.attempted_at.desc()).limit(6).all()
+        (LoginAttempt.user_id == user.id) | (LoginAttempt.username_attempted == user.username) | (LoginAttempt.username_attempted == user.email)
+    ).order_by(LoginAttempt.attempted_at.desc()).limit(10).all()
+    
+    total_successful_logins = LoginAttempt.query.filter(
+        ((LoginAttempt.user_id == user.id) | (LoginAttempt.username_attempted == user.username)),
+        LoginAttempt.status == 'SUCCESS'
+    ).count()
+
+    total_failed_logins = LoginAttempt.query.filter(
+        ((LoginAttempt.user_id == user.id) | (LoginAttempt.username_attempted == user.username)),
+        LoginAttempt.status.in_(['FAILED', 'BLOCKED'])
+    ).count()
+
+    last_login_attempt = recent_logins[0] if recent_logins else None
     
     # 3. Recent Security Events
     recent_events = SecurityLog.query.filter_by(user_id=user.id).order_by(SecurityLog.created_at.desc()).limit(6).all()
@@ -153,6 +165,9 @@ def user_dashboard():
         expiring_passwords_count=len(expiring_passwords),
         user_passwords=user_passwords[:5],
         recent_logins=recent_logins,
+        total_successful_logins=total_successful_logins,
+        total_failed_logins=total_failed_logins,
+        last_login_attempt=last_login_attempt,
         recent_events=recent_events,
         notifications=notifications
     )

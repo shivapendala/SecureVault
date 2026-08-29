@@ -155,10 +155,15 @@
             <div class="cyber-card h-100">
                 <div class="card-header-cyber">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-box-arrow-in-right text-info"></i>
+                        <i class="bi bi-shield-check text-info"></i>
                         <h5 class="mb-0 text-white">Recent Login Activity</h5>
                     </div>
-                    <span class="badge bg-dark border border-secondary text-dim">Personal Telemetry</span>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-success bg-opacity-20 text-success border border-success">{{ total_successful_logins }} Successful</span>
+                        {% if total_failed_logins > 0 %}
+                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger">{{ total_failed_logins }} Failed</span>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="cyber-table">
@@ -173,18 +178,33 @@
                         <tbody>
                             {% for login in recent_logins %}
                             <tr>
-                                <td class="mono-text small text-dim">{{ login.attempted_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                <td class="mono-text text-white small">{{ login.ip_address }}</td>
-                                <td class="text-muted small">{{ login.user_agent[:35] if login.user_agent else 'Standard Web Browser' }}...</td>
+                                <td class="mono-text small text-dim">{{ login.attempted_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td class="mono-text text-white small">
+                                    <i class="bi bi-geo-alt-fill text-info me-1" style="font-size: 0.75rem;"></i>{{ login.ip_address }}
+                                </td>
                                 <td>
-                                    <span class="badge {% if login.status == 'SUCCESS' %}bg-success bg-opacity-25 text-success border border-success{% elif login.status == 'BLOCKED' %}bg-danger bg-opacity-25 text-danger border border-danger{% else %}bg-warning bg-opacity-25 text-warning border border-warning{% endif %}">
-                                        {{ login.status }}
+                                    <div class="fw-semibold text-white small">{{ login.get_browser_info() }}</div>
+                                    <small class="text-dim mono-text" style="font-size: 0.72rem;">{{ login.user_agent[:28] }}...</small>
+                                </td>
+                                <td>
+                                    {% if login.status == 'SUCCESS' %}
+                                    <span class="badge bg-success bg-opacity-25 text-success border border-success">
+                                        <i class="bi bi-check2 me-1"></i>SUCCESS
                                     </span>
+                                    {% elif login.status == 'BLOCKED' %}
+                                    <span class="badge bg-danger bg-opacity-25 text-danger border border-danger" title="{{ login.failure_reason or 'Blocked' }}">
+                                        <i class="bi bi-shield-x me-1"></i>BLOCKED
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning bg-opacity-25 text-warning border border-warning" title="{{ login.failure_reason or 'Invalid credentials' }}">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>FAILED
+                                    </span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">No recent login records.</td>
+                                <td colspan="4" class="text-center py-4 text-muted">No recent login records found.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
