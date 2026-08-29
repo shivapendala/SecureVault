@@ -1,0 +1,139 @@
+/**
+ * SecureVault Enterprise Cybersecurity Design System
+ * Modern high-contrast dark theme, glowing indicators, cyber meters, and telemetry panels.
+ */
+
+:root {
+    --cyber-bg-primary: #080c16;
+    --cyber-bg-secondary: #0d1322;
+    --cyber-bg-card: #121a2d;
+    --cyber-bg-hover: #18223a;
+    --cyber-border-primary: rgba(0, 242, 254, 0.15);
+    --cyber-border-glow: rgba(0, 242, 254, 0.4);
+    --cyber-neon-blue: #00f2fe;
+    --cyber-neon-teal: #4facfe;
+    --cyber-neon-green: #00f0a8;
+    --cyber-neon-red: #ff4b72;
+    --cyber-neon-orange: #ff9800;
+    --cyber-neon-purple: #9d4edd;
+    --cyber-text-main: #e2e8f0;
+    --cyber-text-muted: #94a3b8;
+    --cyber-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+body {
+    background-color: var(--cyber-bg-primary);
+    color: var(--cyber-text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.mono-text, .mono-badge, code, pre {
+    font-family: var(--cyber-font-mono) !important;
+}
+
+.cyber-card {
+    background: var(--cyber-bg-card);
+    border: 1px solid var(--cyber-border-primary);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s ease-in-out;
+}
+
+.cyber-card:hover {
+    border-color: var(--cyber-border-glow);
+    box-shadow: 0 6px 25px rgba(0, 242, 254, 0.15);
+}
+
+.cyber-card-header {
+    background: rgba(13, 19, 34, 0.7);
+    border-bottom: 1px solid var(--cyber-border-primary);
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+.badge-threat-critical {
+    background: rgba(255, 75, 114, 0.15);
+    color: #ff4b72;
+    border: 1px solid rgba(255, 75, 114, 0.4);
+}
+
+.badge-threat-high {
+    background: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.4);
+}
+
+.badge-threat-medium {
+    background: rgba(79, 172, 254, 0.15);
+    color: #4facfe;
+    border: 1px solid rgba(79, 172, 254, 0.4);
+}
+
+.badge-threat-secure {
+    background: rgba(0, 240, 168, 0.15);
+    color: #00f0a8;
+    border: 1px solid rgba(0, 240, 168, 0.4);
+}
+
+.radar-sweep {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 242, 254, 0.3);
+    background: radial-gradient(circle, rgba(0, 242, 254, 0.1) 0%, rgba(8, 12, 22, 0.9) 70%);
+}
+
+.radar-sweep::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(0, 242, 254, 0.4) 0deg, transparent 60deg);
+    animation: radarSpin 4s linear infinite;
+}
+
+@keyframes radarSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.risk-matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+}
+
+.risk-matrix-cell {
+    height: 50px;
+    border-radius: 6px;
+    text-align: center;
+    vertical-align: middle;
+    font-family: var(--cyber-font-mono);
+    font-weight: bold;
+    font-size: 0.85rem;
+    transition: transform 0.2s ease;
+}
+
+.risk-matrix-cell:hover {
+    transform: scale(1.05);
+    cursor: pointer;
+}
+
+.risk-cell-low { background: rgba(0, 240, 168, 0.25); color: #00f0a8; border: 1px solid #00f0a8; }
+.risk-cell-medium { background: rgba(79, 172, 254, 0.25); color: #4facfe; border: 1px solid #4facfe; }
+.risk-cell-high { background: rgba(255, 152, 0, 0.25); color: #ff9800; border: 1px solid #ff9800; }
+.risk-cell-critical { background: rgba(255, 75, 114, 0.25); color: #ff4b72; border: 1px solid #ff4b72; }
+
+.terminal-window {
+    background: #04070d;
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    color: #00f0a8;
+    font-family: var(--cyber-font-mono);
+    font-size: 0.85rem;
+    overflow-x: auto;
+}

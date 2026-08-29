@@ -1,0 +1,34 @@
+{
+  "name": "securevault",
+  "version": "2.4.0",
+  "description": "SecureVault Enterprise Cybersecurity & Zero-Trust Governance Platform",
+  "main": "app.py",
+  "scripts": {
+    "start": "python run.py",
+    "dev": "python run.py",
+    "test": "pytest",
+    "test:verbose": "pytest -v",
+    "init-db": "python init_db.py",
+    "docker:build": "docker build -t securevault .",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "keywords": [
+    "cybersecurity",
+    "zero-trust",
+    "waf",
+    "threat-intelligence",
+    "siem",
+    "soar",
+    "kms",
+    "shamir-secret-sharing",
+    "iam",
+    "pam",
+    "compliance",
+    "soc2",
+    "iso27001"
+  ],
+  "author": "SecureVault Global Cyber Command",
+  "license": "UNLICENSED",
+  "private": true
+}
