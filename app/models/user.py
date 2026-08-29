@@ -22,6 +22,7 @@ class User(db.Model):
     
     # Relationships
     passwords = db.relationship('Password', backref='owner', lazy=True, cascade='all, delete-orphan')
+    password_history = db.relationship('PasswordHistory', backref='user', lazy=True, cascade='all, delete-orphan', order_by='desc(PasswordHistory.created_at)')
     files = db.relationship('FileVault', backref='uploader', lazy=True, cascade='all, delete-orphan')
     notifications = db.relationship('Notification', backref='recipient', lazy=True, cascade='all, delete-orphan')
     security_logs = db.relationship('SecurityLog', backref='user', lazy=True)

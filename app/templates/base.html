@@ -45,9 +45,13 @@
                 </a>
 
                 <div class="nav-section-title">Security Modules</div>
-                <a href="{{ url_for('vault.index') }}" class="nav-item-link {% if 'vault' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('vault.index') }}" class="nav-item-link {% if request.endpoint and 'vault' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-key-fill nav-icon text-info"></i>
                     <span>Credential Vault</span>
+                </a>
+                <a href="{{ url_for('password_security.index') }}" class="nav-item-link {% if request.endpoint and 'password_security' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-shield-lock-fill nav-icon text-warning"></i>
+                    <span>Password Security</span>
                 </a>
                 <a href="{{ url_for('assets.index') }}" class="nav-item-link {% if 'assets' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-hdd-network-fill nav-icon text-primary"></i>

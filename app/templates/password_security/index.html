@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Password Security Hub - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="mb-0 text-white"><i class="bi bi-shield-lock-fill text-info me-2"></i>Password Security & Policy Engine</h2>
+                <span class="badge bg-info bg-opacity-10 text-info border border-info">NIST SP 800-63B</span>
+            </div>
+            <p class="text-muted small mb-0">Cryptographic key generation, real-time Shannon entropy analysis, and history-aware passphrase rotation.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('vault.index') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-safe2 me-1"></i>Credential Vault
+            </a>
+        </div>
+    </div>
+
+    <!-- Top Tools Row: Generator + Live Strength Evaluator -->
+    <div class="row g-4">
+        <!-- 1. Cryptographic Password Generator -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                    <h5 class="text-white mb-0"><i class="bi bi-magic text-info me-2"></i>Cryptographic Key Generator</h5>
+                    <span class="badge bg-success bg-opacity-20 text-success border border-success">CSPRNG</span>
+                </div>
+
+                <!-- Generated Output -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-semibold">Generated Secure Passphrase</label>
+                    <div class="input-group">
+                        <input type="text" id="genOutput" class="form-control cyber-input mono-text text-info fw-bold" readonly value="Click Generate to Create Key">
+                        <button class="btn btn-outline-info" type="button" id="btnGenRefresh" title="Regenerate">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        <button class="btn btn-cyber-primary" type="button" id="btnGenCopy" title="Copy to Clipboard">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Length Slider -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label class="form-label text-muted small fw-semibold">Key Length:</label>
+                        <span class="mono-text text-info fw-bold" id="genLengthVal">24 characters</span>
+                    </div>
+                    <input type="range" class="form-range" id="genLengthSlider" min="10" max="48" value="24">
+                </div>
+
+                <!-- Generator Options Switches -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input bg-dark border-secondary" type="checkbox" id="genOptUpper" checked>
+                            <label class="form-check-label text-white small" for="genOptUpper">Uppercase (A-Z)</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input bg-dark border-secondary" type="checkbox" id="genOptDigits" checked>
+                            <label class="form-check-label text-white small" for="genOptDigits">Numbers (0-9)</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input bg-dark border-secondary" type="checkbox" id="genOptSymbols" checked>
+                            <label class="form-check-label text-white small" for="genOptSymbols">Special Symbols (!@#$)</label>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input bg-dark border-secondary" type="checkbox" id="genOptAmbiguous">
+                            <label class="form-check-label text-white small" for="genOptAmbiguous">Exclude Ambiguous (0, O, l, 1)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25">
+                    <span class="small text-muted" id="genEntropyResult">Entropy: 128.4 bits</span>
+                    <button type="button" class="btn btn-sm btn-cyber-outline" id="btnApplyToForm">
+                        <i class="bi bi-arrow-down-circle me-1"></i>Apply to Change Form
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Live Strength & Entropy Evaluator -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                    <h5 class="text-white mb-0"><i class="bi bi-activity text-info me-2"></i>Live Entropy & Breach Analyzer</h5>
+                    <span class="badge bg-dark border border-secondary text-dim">Shannon Model</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-semibold">Test Any Passphrase or Secret</label>
+                    <input type="text" id="strengthTestInput" class="form-control cyber-input mono-text" placeholder="Type passphrase here to test live entropy...">
+                </div>
+
+                <div class="mb-2 d-flex justify-content-between">
+                    <span class="text-muted small">Shannon Entropy:</span>
+                    <span class="mono-text text-info fw-bold" id="liveEntropyVal">0.0 bits</span>
+                </div>
+                <div class="progress bg-dark mb-3" style="height: 10px;">
+                    <div class="progress-bar" id="liveEntropyProgressBar" style="width: 0%;"></div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted small">Complexity Rating:</span>
+                    <span class="badge bg-dark border border-secondary text-white" id="liveStrengthBadge">Waiting for input</span>
+                </div>
+
+                <div class="card-header-cyber p-0 mb-2">
+                    <span class="text-white small fw-bold">Security Analysis & Recommendations:</span>
+                </div>
+                <ul class="list-unstyled mb-0" id="liveFeedbackList">
+                    <li class="text-muted small">• Enter at least 12 characters with mixed casing, digits, and symbols.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Password Change Form + Password History Log -->
+    <div class="row g-4">
+        <!-- 3. Password Change Form -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                    <h5 class="text-white mb-0"><i class="bi bi-key text-info me-2"></i>Rotate Master Passphrase</h5>
+                    <span class="badge bg-warning bg-opacity-15 text-warning border border-warning">HISTORY ENFORCED</span>
+                </div>
+
+                <form method="POST" action="{{ url_for('password_security.change_password') }}">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Current Master Passphrase *</label>
+                        <input type="password" name="current_password" class="form-control cyber-input" required placeholder="Enter current passphrase">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">New Master Passphrase *</label>
+                        <div class="input-group">
+                            <input type="password" name="new_password" id="newPwdField" class="form-control cyber-input mono-text" required placeholder="Enter new passphrase">
+                            <button class="btn btn-outline-secondary border-secondary text-muted" type="button" onclick="const p=document.getElementById('newPwdField'); p.type = p.type==='password'?'text':'password';">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Confirm New Passphrase *</label>
+                        <div class="input-group">
+                            <input type="password" name="confirm_password" id="confirmPwdField" class="form-control cyber-input mono-text" required placeholder="Re-enter new passphrase">
+                            <button class="btn btn-outline-secondary border-secondary text-muted" type="button" onclick="const p=document.getElementById('confirmPwdField'); p.type = p.type==='password'?'text':'password';">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-2 rounded bg-dark border border-secondary border-opacity-25 small mb-3 text-muted">
+                        <i class="bi bi-info-circle text-info me-1"></i><strong>Policy Rule:</strong> You cannot reuse your current passphrase or any of your last 5 archived historical passphrases.
+                    </div>
+
+                    <button type="submit" class="btn btn-cyber-primary w-100 py-2">
+                        <i class="bi bi-shield-check me-2"></i>Validate & Update Passphrase
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 4. Password History Log -->
+        <div class="col-12 col-lg-6">
+            <div class="cyber-card h-100">
+                <div class="card-header-cyber">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-info"></i>
+                        <h5 class="mb-0 text-white">Archived Password History</h5>
+                    </div>
+                    <span class="badge bg-dark border border-secondary text-dim">{{ history_entries|length }} Records</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="cyber-table">
+                        <thead>
+                            <tr>
+                                <th>Rotation Timestamp (UTC)</th>
+                                <th>Cryptographic Hash Algorithm</th>
+                                <th>Policy State</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for h in history_entries %}
+                            <tr>
+                                <td class="mono-text text-white small">{{ h.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <span class="mono-text badge bg-dark border border-secondary text-info">PBKDF2-SHA256 (Salted)</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger bg-opacity-15 text-danger border border-danger">RESTRICTED FROM REUSE</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">
+                                    <i class="bi bi-shield-check text-success fs-3 d-block mb-1"></i>
+                                    Initial password active. No previous history records archived yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-3 border-top border-secondary border-opacity-25 small text-muted">
+                    <i class="bi bi-shield-lock me-1 text-success"></i>Passwords in history are stored as one-way salted hashes and cannot be recovered in plaintext.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Password Generator Logic
+    const slider = document.getElementById('genLengthSlider');
+    const lengthVal = document.getElementById('genLengthVal');
+    const btnRefresh = document.getElementById('btnGenRefresh');
+    const btnCopy = document.getElementById('btnGenCopy');
+    const btnApply = document.getElementById('btnApplyToForm');
+
+    function triggerGenerator() {
+        const length = slider.value;
+        lengthVal.textContent = `${length} characters`;
+
+        const upper = document.getElementById('genOptUpper').checked;
+        const digits = document.getElementById('genOptDigits').checked;
+        const symbols = document.getElementById('genOptSymbols').checked;
+        const ambiguous = document.getElementById('genOptAmbiguous').checked;
+
+        fetch('/password-security/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                length: length,
+                uppercase: upper,
+                numbers: digits,
+                symbols: symbols,
+                avoid_ambiguous: ambiguous
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('genOutput').value = data.password;
+                document.getElementById('genEntropyResult').textContent = `Entropy: ${data.entropy_analysis.entropy} bits (${data.entropy_analysis.strength})`;
+            }
+        });
+    }
+
+    slider.addEventListener('input', triggerGenerator);
+    document.getElementById('genOptUpper').addEventListener('change', triggerGenerator);
+    document.getElementById('genOptDigits').addEventListener('change', triggerGenerator);
+    document.getElementById('genOptSymbols').addEventListener('change', triggerGenerator);
+    document.getElementById('genOptAmbiguous').addEventListener('change', triggerGenerator);
+    btnRefresh.addEventListener('click', triggerGenerator);
+
+    btnCopy.addEventListener('click', () => {
+        const val = document.getElementById('genOutput').value;
+        if (val) window.copyToClipboard(val, btnCopy);
+    });
+
+    btnApply.addEventListener('click', () => {
+        const val = document.getElementById('genOutput').value;
+        const newPwd = document.getElementById('newPwdField');
+        const confirmPwd = document.getElementById('confirmPwdField');
+        if (val && newPwd && confirmPwd) {
+            newPwd.value = val;
+            confirmPwd.value = val;
+            newPwd.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+
+    // Initial generation
+    triggerGenerator();
+
+    // 2. Live Strength Analyzer
+    const strengthInput = document.getElementById('strengthTestInput');
+    strengthInput.addEventListener('input', () => {
+        const val = strengthInput.value;
+        fetch('/password-security/api/check-strength', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: val })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const a = data.analysis;
+            document.getElementById('liveEntropyVal').textContent = `${a.entropy} bits`;
+            
+            const badge = document.getElementById('liveStrengthBadge');
+            badge.textContent = a.strength;
+            badge.className = `badge bg-${a.color} bg-opacity-20 text-${a.color} border border-${a.color}`;
+
+            const bar = document.getElementById('liveEntropyProgressBar');
+            const pct = Math.min(100, Math.round((a.entropy / 100) * 100));
+            bar.style.width = `${pct}%`;
+            bar.className = `progress-bar bg-${a.color}`;
+
+            const feedback = document.getElementById('liveFeedbackList');
+            feedback.innerHTML = '';
+            a.feedback.forEach(f => {
+                const li = document.createElement('li');
+                li.className = 'text-muted small mb-1';
+                li.textContent = `• ${f}`;
+                feedback.appendChild(li);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

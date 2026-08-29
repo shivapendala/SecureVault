@@ -21,11 +21,13 @@ def create_app(config_class=Config):
     from app.routes.incidents import incidents_bp
     from app.routes.scanners import scanners_bp
     from app.routes.audit import audit_bp
+    from app.routes.password_security import password_sec_bp
     from app.routes.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(vault_bp, url_prefix='/vault')
+    app.register_blueprint(password_sec_bp, url_prefix='/password-security')
     app.register_blueprint(assets_bp, url_prefix='/assets')
     app.register_blueprint(vuln_bp, url_prefix='/vulnerabilities')
     app.register_blueprint(incidents_bp, url_prefix='/incidents')
