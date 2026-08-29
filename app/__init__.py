@@ -25,11 +25,13 @@ def create_app(config_class=Config):
     from app.routes.incidents import incidents_bp
     from app.routes.scanners import scanners_bp
     from app.routes.audit import audit_bp
+    from app.routes.notifications import notifications_bp
     from app.routes.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(notifications_bp, url_prefix='/notifications')
     app.register_blueprint(vault_bp, url_prefix='/vault')
     app.register_blueprint(password_sec_bp, url_prefix='/password-security')
     app.register_blueprint(file_sec_bp, url_prefix='/file-security')
@@ -47,12 +49,20 @@ def create_app(config_class=Config):
         from flask import session
         from app.models.incident import Incident
         from app.models.vulnerability import Vulnerability
+        from app.models.notification import Notification
         
         open_incidents = 0
         critical_vulns = 0
+        unread_notifs = 0
         try:
             open_incidents = Incident.query.filter(Incident.status.in_(['Investigating', 'Triage'])).count()
             critical_vulns = Vulnerability.query.filter_by(severity='Critical', status='Open').count()
+            u_id = session.get('user_id')
+            if u_id:
+                unread_notifs = Notification.query.filter(
+                    (Notification.user_id == u_id) | (Notification.user_id == None),
+                    Notification.is_read == False
+                ).count()
         except Exception:
             pass
             
@@ -62,6 +72,7 @@ def create_app(config_class=Config):
             'current_user_id': session.get('user_id'),
             'badge_open_incidents': open_incidents,
             'badge_critical_vulns': critical_vulns,
+            'badge_unread_notifications': unread_notifs,
             'app_version': 'v2.4-Enterprise'
         }
 

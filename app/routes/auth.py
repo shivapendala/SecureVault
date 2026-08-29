@@ -122,13 +122,22 @@ def login():
                     user.status = 'Locked'
                     fail_reason = "Security lockout triggered: 5 failed attempts reached. Account locked for 15 minutes."
                     
-                    # Create alert notification for user
+                    # Create alert notification for user lockout
                     db.session.add(Notification(
                         user_id=user.id,
                         title='Security Alert: Account Lockout Triggered',
-                        message=f'Multiple failed login attempts detected on your account from IP {ip_addr}.',
+                        message=f'Multiple failed login attempts detected on your account from IP {ip_addr}. Account locked for 15 minutes.',
                         category='threat',
                         priority='high'
+                    ))
+                else:
+                    # Create alert notification on failed attempt
+                    db.session.add(Notification(
+                        user_id=user.id,
+                        title='Security Alert: Failed Sign-in Attempt',
+                        message=f'Failed sign-in attempt detected from IP {ip_addr}. Attempt #{user.failed_login_count} of 5.',
+                        category='threat',
+                        priority='normal' if user.failed_login_count < 3 else 'high'
                     ))
                     
                 db.session.add(LoginAttempt(

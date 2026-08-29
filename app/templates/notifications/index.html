@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Security Notifications & Threat Alerts - SecureVault{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="mb-0 text-white"><i class="bi bi-bell-fill text-info me-2"></i>Security Notifications & Threat Dispatch</h2>
+                {% if unread_count > 0 %}
+                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger">{{ unread_count }} ACTION REQUIRED</span>
+                {% else %}
+                <span class="badge bg-success bg-opacity-20 text-success border border-success">ALL CAUGHT UP</span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-0">Automated security alerts for failed authentications, credential rotations, account status updates, and threat telemetry.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if unread_count > 0 %}
+            <form method="POST" action="{{ url_for('notifications.mark_all_read') }}" class="d-inline">
+                <button type="submit" class="btn btn-cyber-primary">
+                    <i class="bi bi-check2-all me-1"></i>Mark All as Read
+                </button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('dashboard.user_dashboard') }}" class="btn btn-cyber-outline">
+                <i class="bi bi-person-workspace me-1"></i>User Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="cyber-card p-2">
+        <ul class="nav nav-pills gap-2" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link text-white {% if tab_filter == 'all' %}active bg-info text-dark fw-bold{% endif %}" href="{{ url_for('notifications.index', tab='all') }}">
+                    <i class="bi bi-collection me-1"></i>All Notifications ({{ total_count }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white {% if tab_filter == 'unread' %}active bg-info text-dark fw-bold{% endif %}" href="{{ url_for('notifications.index', tab='unread') }}">
+                    <i class="bi bi-bell me-1"></i>Unread Alerts
+                    {% if unread_count > 0 %}
+                    <span class="badge bg-danger ms-1">{{ unread_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white {% if tab_filter == 'read' %}active bg-info text-dark fw-bold{% endif %}" href="{{ url_for('notifications.index', tab='read') }}">
+                    <i class="bi bi-check2-circle me-1"></i>Read Archive ({{ read_count }})
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Notification Stream Card -->
+    <div class="cyber-card">
+        <div class="card-header-cyber">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-broadcast text-info"></i>
+                <h5 class="mb-0 text-white">Alert Dispatch Stream</h5>
+            </div>
+            <span class="badge bg-dark border border-secondary text-dim">Showing {{ notifications|length }} Notifications</span>
+        </div>
+
+        <div class="p-3">
+            <div class="d-flex flex-column gap-3">
+                {% for n in notifications %}
+                <div class="p-3 rounded bg-dark border {% if not n.is_read %}border-info border-opacity-50 shadow-sm{% else %}border-secondary border-opacity-25 opacity-75{% endif %} d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <!-- Notification Icon & Body -->
+                    <div class="d-flex align-items-start gap-3 flex-grow-1" style="min-width: 280px;">
+                        <div class="p-2 rounded-circle mt-1 d-flex align-items-center justify-content-center {% if n.category == 'threat' %}bg-danger bg-opacity-20 text-danger{% elif n.category == 'security' %}bg-warning bg-opacity-20 text-warning{% else %}bg-info bg-opacity-20 text-info{% endif %}" style="width: 42px; height: 42px; font-size: 1.2rem;">
+                            {% if n.category == 'threat' %}
+                            <i class="bi bi-shield-slash-fill"></i>
+                            {% elif n.category == 'security' %}
+                            <i class="bi bi-key-fill"></i>
+                            {% else %}
+                            <i class="bi bi-info-circle-fill"></i>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                <h6 class="mb-0 text-white fw-bold">{{ n.title }}</h6>
+                                {% if not n.is_read %}
+                                <span class="badge bg-info bg-opacity-20 text-info border border-info" style="font-size: 0.68rem;">UNREAD</span>
+                                {% else %}
+                                <span class="badge bg-secondary text-dim" style="font-size: 0.68rem;">READ</span>
+                                {% endif %}
+                                <span class="badge {% if n.priority == 'high' %}badge-critical{% else %}badge-low{% endif %}" style="font-size: 0.68rem;">
+                                    {{ n.priority|upper }} PRIORITY
+                                </span>
+                            </div>
+                            <p class="text-white small mb-1">{{ n.message }}</p>
+                            <div class="d-flex align-items-center gap-3 text-dim mono-text" style="font-size: 0.75rem;">
+                                <span><i class="bi bi-clock me-1"></i>{{ n.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</span>
+                                {% if n.read_at %}
+                                <span><i class="bi bi-check2 me-1"></i>Read at: {{ n.read_at.strftime('%H:%M:%S') }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex align-items-center gap-2">
+                        {% if not n.is_read %}
+                        <form method="POST" action="{{ url_for('notifications.mark_read', notif_id=n.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-info" title="Mark as Read">
+                                <i class="bi bi-check2"></i> Mark Read
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('notifications.mark_unread', notif_id=n.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary text-dim" title="Mark as Unread">
+                                <i class="bi bi-envelope"></i> Mark Unread
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <form method="POST" action="{{ url_for('notifications.delete_notification', notif_id=n.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Notification">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-bell-slash text-dim fs-2 d-block mb-2"></i>
+                    No notifications found in this view.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

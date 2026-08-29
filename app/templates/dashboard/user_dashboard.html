@@ -263,29 +263,52 @@
     <div class="cyber-card">
         <div class="card-header-cyber">
             <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-bell text-info"></i>
-                <h5 class="mb-0 text-white">Security Alerts & System Notifications</h5>
+                <i class="bi bi-bell-fill text-info"></i>
+                <h5 class="mb-0 text-white">Security Alerts & Threat Notifications</h5>
             </div>
-            <span class="badge bg-info bg-opacity-10 text-info border border-info">{{ notifications|length }} Notifications</span>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('notifications.index') }}" class="btn btn-sm btn-cyber-outline">
+                    <i class="bi bi-broadcast me-1"></i>View All Alerts &rarr;
+                </a>
+            </div>
         </div>
         <div class="p-3">
-            <div class="d-flex flex-column gap-2">
+            <div class="d-flex flex-column gap-3">
                 {% for n in notifications %}
-                <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 d-flex justify-content-between align-items-start">
+                <div class="p-3 rounded bg-dark border {% if not n.is_read %}border-info border-opacity-50 shadow-sm{% else %}border-secondary border-opacity-25 opacity-75{% endif %} d-flex justify-content-between align-items-start gap-3">
                     <div class="d-flex align-items-start gap-3">
-                        <i class="bi {% if n.category == 'threat' %}bi-exclamation-octagon-fill text-danger fs-5{% elif n.category == 'reminder' %}bi-clock-fill text-warning fs-5{% else %}bi-shield-check text-info fs-5{% endif %} mt-1"></i>
+                        <i class="bi {% if n.category == 'threat' %}bi-shield-slash-fill text-danger fs-4{% elif n.category == 'security' %}bi-key-fill text-warning fs-4{% else %}bi-shield-check text-info fs-4{% endif %} mt-1"></i>
                         <div>
-                            <div class="fw-bold text-white">{{ n.title }}</div>
-                            <div class="text-muted small">{{ n.message }}</div>
-                            <small class="mono-text text-dim">{{ n.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</small>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold text-white">{{ n.title }}</span>
+                                {% if not n.is_read %}
+                                <span class="badge bg-info bg-opacity-20 text-info border border-info" style="font-size: 0.65rem;">UNREAD</span>
+                                {% else %}
+                                <span class="badge bg-secondary text-dim" style="font-size: 0.65rem;">READ</span>
+                                {% endif %}
+                                <span class="badge {% if n.priority == 'high' %}badge-critical{% else %}badge-low{% endif %}" style="font-size: 0.65rem;">
+                                    {{ n.priority|upper }} PRIORITY
+                                </span>
+                            </div>
+                            <div class="text-white small mb-1">{{ n.message }}</div>
+                            <small class="mono-text text-dim">{{ n.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</small>
                         </div>
                     </div>
-                    <span class="badge {% if n.priority == 'high' %}badge-critical{% else %}badge-medium{% endif %}">
-                        {{ n.priority|upper }} PRIORITY
-                    </span>
+                    <div>
+                        {% if not n.is_read %}
+                        <form method="POST" action="{{ url_for('notifications.mark_read', notif_id=n.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-info" title="Mark as Read">
+                                <i class="bi bi-check2"></i> Mark Read
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </div>
                 {% else %}
-                <div class="text-center py-3 text-muted">No unread notifications.</div>
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-bell-slash text-dim fs-3 d-block mb-1"></i>
+                    No recent security notifications.
+                </div>
                 {% endfor %}
             </div>
         </div>

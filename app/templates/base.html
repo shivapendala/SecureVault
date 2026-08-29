@@ -138,6 +138,17 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-3">
+                    <!-- Notifications Button -->
+                    <a href="{{ url_for('notifications.index') }}" class="btn btn-sm btn-cyber-outline position-relative" title="Security Notifications Center">
+                        <i class="bi bi-bell-fill text-info"></i>
+                        {% if badge_unread_notifications > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-dark" style="font-size: 0.65rem;">
+                            {{ badge_unread_notifications }}
+                            <span class="visually-hidden">unread alerts</span>
+                        </span>
+                        {% endif %}
+                    </a>
+
                     <div class="dropdown">
                         <button class="btn btn-sm btn-cyber-outline dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-shield-check text-info"></i>
