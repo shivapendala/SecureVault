@@ -1,10 +1,11 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
+
+# Distribution / packaging
 build/
 develop-eggs/
 dist/
@@ -23,24 +24,60 @@ wheels/
 
 # Virtual Environments
 venv/
-ENV/
 env/
+ENV/
 .venv/
+env.bak/
+venv.bak/
 
-# Environment Variables
+# Environment Variables & Local Secrets
 .env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.pfx
 
-# SQLite local databases
+# Local Database Files
 *.db
+*.sqlite
 *.sqlite3
+instance/
 
-# IDE / Editor
+# Automated Testing & Coverage Reports
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Logs & Storage
+*.log
+logs/
+.tempmediaStorage/
+uploads/*
+!uploads/.gitkeep
+vault_storage/*
+!vault_storage/.gitkeep
+
+# IDE & Text Editor Files
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-workspace
+*.sublime-project
 
-# OS specific
+# Operating System Files
 Thumbs.db
 Desktop.ini
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
